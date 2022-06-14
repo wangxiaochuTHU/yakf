@@ -1,7 +1,6 @@
 #![no_std]
 #[macro_use]
 extern crate log;
-extern crate generic_array;
 extern crate hifitime;
 extern crate nalgebra as na;
 // extern crate prost_derive;
