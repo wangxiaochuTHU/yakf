@@ -1,6 +1,3 @@
-use nalgebra::Storage;
-
-// use super::estimate::Estimate;
 use super::sigma_points::{MinimalSkewSimplexSampling, SamplingMethod};
 use super::state::State;
 use crate::alloc::boxed::Box;
@@ -10,8 +7,12 @@ use crate::linalg::allocator::Allocator;
 use crate::linalg::{DefaultAllocator, DimName, OMatrix, OVector};
 use crate::time::{Duration, Epoch};
 
-/// T: state dimention, e.g., Const<6>
-///
+/// T: state dimension, e.g., Const<6>
+/// T2:Samples number (e.g, T2 = T + 2 for Minimal skew simplex sampling method)
+/// M: measuremtent dimension
+/// U: External vector dimension
+/// S: A state that implements State trait
+#[allow(dead_code)]
 pub struct UKF<T, T2, M, U, S>
 where
     T: DimName,
@@ -65,6 +66,7 @@ where
         + Allocator<f64, T, T2>
         + Allocator<f64, M, T2>,
 {
+    #[allow(dead_code)]
     /// function that returns a UKF
     pub fn build(
         dynamics: Box<dyn Fn(&OVector<f64, T>, &OVector<f64, U>, Duration) -> OVector<f64, T>>,
@@ -86,28 +88,39 @@ where
         }
     }
 
+    #[allow(dead_code)]
     /// resets state to a new one
     pub fn reset_state(&mut self, new_s: S) {
         self.prev_x = new_s;
     }
+
+    #[allow(dead_code)]
     pub fn reset_p(&mut self, new_p: OMatrix<f64, T, T>) {
         self.prev_p = new_p;
     }
+
+    #[allow(dead_code)]
     pub fn reset_r(&mut self, new_r: OMatrix<f64, M, M>) {
         self.process_r = new_r;
     }
+
+    #[allow(dead_code)]
     pub fn reset_q(&mut self, new_q: OMatrix<f64, T, T>) {
         self.process_q = new_q;
     }
 
+    #[allow(dead_code)]
     pub fn current_estimate(&self) -> &S {
         &self.prev_x
     }
+
+    #[allow(dead_code)]
     pub fn samples_dimention(&self) -> usize {
         T2::dim()
     }
 
-    pub fn state_samples(&self) -> Result<OMatrix<f64, T, T2>, YakfError> {
+    #[allow(dead_code)]
+    fn state_samples(&self) -> Result<OMatrix<f64, T, T2>, YakfError> {
         match (&self.prev_p + &self.process_q).cholesky() {
             Some(cholesky) => {
                 let cho = cholesky.unpack();
@@ -128,6 +141,8 @@ where
             None => Err(YakfError::CholeskyErr),
         }
     }
+
+    #[allow(dead_code)]
     pub fn feed_and_update(
         &mut self,
         measure: OVector<f64, M>,
@@ -212,7 +227,8 @@ where
         }
     }
 
-    pub fn propagate(
+    #[allow(dead_code)]
+    fn propagate(
         &self,
         state: OVector<f64, T>,
         dt: Duration,
@@ -221,7 +237,8 @@ where
         (self.dynamics)(&state, external, dt)
     }
 
-    pub fn gain_factor(
+    #[allow(dead_code)]
+    fn gain_factor(
         &self,
         p_xy: OMatrix<f64, T, M>,
         p_yy: &OMatrix<f64, M, M>,
