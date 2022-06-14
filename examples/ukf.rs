@@ -1,26 +1,3 @@
-# yakf - Yet Another Kalman Filter
-Yet Another Kalman Filter Implementation, with `[no_std]` supported
-
-
-# Current implementation status
-
-## Filter Status
-* UKF ✅
-
-## Sampling Method Status
-* Minimal Skew Simplex Sampling (n+2) ✅
-
-
-
-# Usage
-Add this to your Cargo.toml:
-```
-[dependencies]
-yakf = "0.1"
-```
-
-Example:
-```
 /// import yakf crate
 extern crate yakf;
 /// import State trait, UKF filter struct, and MSSS sampling method struct
@@ -134,13 +111,3 @@ fn main() {
     let error = &ukf.current_estimate().state() - &bike_actual.state();
     assert!(error.norm() < 0.5);
 }
-```
-
-You can see the output as
-```
-.. .. ..
-bike actual = [[992.0, 1.0]], meas = [[4920320.466, 1983.914]], ukf estimate = [[992.208, 1.000]]
-bike actual = [[993.0, 1.0]], meas = [[4930244.722, 1986.052]], ukf estimate = [[993.127, 1.000]]
-bike actual = [[994.0, 1.0]], meas = [[4940180.252, 1987.912]], ukf estimate = [[994.227, 1.000]]
-bike actual = [[995.0, 1.0]], meas = [[4950125.125, 1989.992]], ukf estimate = [[995.159, 1.000]]
-```

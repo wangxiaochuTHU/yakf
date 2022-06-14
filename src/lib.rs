@@ -18,6 +18,12 @@ pub mod linalg {
     pub use na::RealField;
 }
 
+/// Re-export nalgebra
+pub mod kf {
+    pub use super::errors::YakfError;
+    pub use super::filters::*;
+}
+
 mod errors;
 mod filters;
 mod tests;
