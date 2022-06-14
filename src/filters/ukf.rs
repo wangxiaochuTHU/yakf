@@ -1,4 +1,4 @@
-use super::sigma_points::{MinimalSkewSimplexSampling, SamplingMethod};
+use super::sigma_points::SamplingMethod;
 use super::state::State;
 use crate::alloc::boxed::Box;
 use crate::errors::YakfError;

@@ -49,7 +49,7 @@ mod tests {
         let s = OVector::<f64, U2>::new(-5.0, 1.0);
         let t = Epoch::now().unwrap();
         let mut bike = BikeState::new(s, t);
-        let dynamics = |x: &OVector<f64, U2>, ext: &OVector<f64, Const<1>>, dt: Duration| {
+        let dynamics = |x: &OVector<f64, U2>, _ext: &OVector<f64, Const<1>>, dt: Duration| {
             OVector::<f64, U2>::new(x[0] + x[1] * dt.in_seconds(), x[1])
         };
         libc_println!("bike state =  {:?}", bike);
@@ -207,7 +207,7 @@ mod tests {
         let s = OVector::<f64, U2>::new(-5.0, 1.0);
         let t = Epoch::now().unwrap();
         let mut bike_actual = BikeState::new(s, t);
-        let dynamics = |x: &OVector<f64, U2>, ext: &OVector<f64, Const<1>>, dt: Duration| {
+        let dynamics = |x: &OVector<f64, U2>, _ext: &OVector<f64, Const<1>>, dt: Duration| {
             OVector::<f64, U2>::new(x[0] + x[1] * dt.in_seconds(), x[1])
         };
         let measure_model = |x: &OVector<f64, U2>| {
@@ -235,7 +235,7 @@ mod tests {
         );
 
         let ukf_base_epoch = ukf.current_estimate().epoch();
-        for i in 0..1000 {
+        for _i in 0..1000 {
             let dt = Duration::from_f64(1.0, Unit::Second);
             let m_epoch = ukf_base_epoch + dt;
             let _ = bike_actual.propagate(&dynamics, dt, OVector::<f64, Const<1>>::zeros());

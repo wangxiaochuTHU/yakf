@@ -7,8 +7,6 @@ extern crate nalgebra as na;
 extern crate alloc;
 extern crate itertools;
 
-extern crate thiserror;
-
 /// Re-export of hifitime
 pub mod time {
     pub use hifitime::*;

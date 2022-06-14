@@ -1,7 +1,6 @@
-use super::thiserror::Error;
-
 #[derive(Debug)]
 pub enum YakfError {
+    #[allow(dead_code)]
     // #[error("Concrete type faild to convert from Duration(in f64)")]
     DurationConvertErr,
 

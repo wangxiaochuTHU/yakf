@@ -16,7 +16,7 @@ where
     }
 
     /// set the state vec
-    fn set_state(&mut self, state: OVector<f64, T>) {
+    fn set_state(&mut self, _state: OVector<f64, T>) {
         unimplemented!()
     }
 
@@ -26,7 +26,7 @@ where
     }
 
     /// set the epoch
-    fn set_epoch(&mut self, epoch: Epoch) {
+    fn set_epoch(&mut self, _epoch: Epoch) {
         unimplemented!()
     }
 

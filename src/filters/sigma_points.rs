@@ -49,6 +49,7 @@ where
     T2: DimName,
     DefaultAllocator: Allocator<f64, T2> + Allocator<f64, T, T2> + Allocator<f64, T>,
 {
+    #[allow(dead_code)]
     pub fn build(w0: f64) -> Self {
         let mut sampling = Self::empty();
         sampling.set_weights(w0);
@@ -56,6 +57,7 @@ where
         sampling
     }
 
+    #[allow(dead_code)]
     /// generate an object with fields filled with zeros.
     fn empty() -> Self {
         Self {
@@ -88,9 +90,10 @@ where
         }
     }
 
+    #[allow(dead_code)]
     /// positive scaling parameter `a` ranges from [1-e4, 1]
     /// TODO: Add scaling weights.
-    fn scale_weights(&mut self, a: f64) {}
+    fn scale_weights(&mut self, _a: f64) {}
 
     /// Expand vector sequence w.r.t weights.
     fn expand_bases(&mut self, n: usize) {
