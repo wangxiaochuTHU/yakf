@@ -24,7 +24,7 @@ Example:
 /// import yakf crate
 extern crate yakf;
 /// import State trait, UKF filter struct, and MSSS sampling method struct
-use yakf::kf::{sigma_points::MinimalSkewSimplexSampling as MSSS, state::State, ukf::UKF};
+use yakf::kf::{MinimalSkewSimplexSampling as MSSS, State, UKF};
 
 /// import Re-exports of hifitime (for time) and nalgebra (for matrix)
 use yakf::{
@@ -73,31 +73,36 @@ fn main() {
             self.t = epoch;
         }
     }
-    // you SHOULD provide a function `dynamics` for propagating the state.
+    // you SHOULD provide a function `dynamics` for UKF propagating the state.
     //
     // for example,
     let dynamics = |x: &OVector<f64, U2>, _ext: &OVector<f64, Const<1>>, dt: Duration| {
         OVector::<f64, U2>::new(x[0] + x[1] * dt.in_seconds(), x[1])
     };
 
-    // you SHOULD ALSO provide a function for yielding measurements based on given state.
+    // you SHOULD ALSO provide a function for UKF yielding measurements based on given state.
     //
     // for example, assume the measuring has a 2-D measurement.
     let measure_model =
         |x: &OVector<f64, U2>| OVector::<f64, U2>::new(5.0 * x[0] * x[0] * x[1], x[1] * x[0] * 2.0);
 
-    // Finally, build the UKF
+    // you SHOULD ALSO specify a sampling method for UKF.
+    // currently, only MSSS method is done. MSSS has only one parameter `w0` to tune.
+    // w0 belongs to [0.0 , 1.0].  this example takes w0 = 0.6.
+    let samling_method = MSSS::build(0.6);
+
+    // finally, build the UKF.
     let mut ukf = UKF::<U2, Const<4>, U2, Const<1>, BikeState>::build(
         Box::new(dynamics),
         Box::new(measure_model),
-        Box::new(MSSS::build(0.6)),
+        Box::new(samling_method),
         BikeState::zeros(),
         OMatrix::<f64, U2, U2>::from_diagonal_element(1.0),
         OMatrix::<f64, U2, U2>::from_diagonal_element(0.01),
         OMatrix::<f64, U2, U2>::from_diagonal(&OVector::<f64, U2>::new(1.0, 0.01)),
     );
 
-    // You can then use ukf to estimate the state vector.
+    // you can then use ukf to estimate the state vector.
 
     let mut rng = rand::thread_rng();
     let mut add_noisies = |mut y: OVector<f64, U2>| {
@@ -115,13 +120,30 @@ fn main() {
         &ukf.current_estimate()
     );
 
+    // you can set an arbitary time base for ukf.
+    // a timing system would help in aligning data.
     let ukf_base_epoch = ukf.current_estimate().epoch();
+
     for _i in 0..1000 {
         let dt = Duration::from_f64(1.0, Unit::Second);
         let m_epoch = ukf_base_epoch + dt;
+
+        /*
+        Remark 1. Note that the actual dynamics doesn't need to be exactly the same with that used by ukf.
+                Actually, the dynamics used by ukf is only a Model abstracted from the actual one.
+                But in this example, assume they are the same. Case is the same for measuring model.
+
+        Remark 2. For the same reason, the delta_t used by actual dynamics is not neccesarily the same
+                with dt (the one used by ukf estimation) and, actually, delta_t should be much smaller than dt
+                in real world. However, for simplity, this example just let them be the same, i.e. delta_t = dt.
+        */
         let _ = bike_actual.propagate(&dynamics, dt, OVector::<f64, Const<1>>::zeros());
+
+        // use measuring model to simulate a measurement, and add some noises on it.
         let mut meas = measure_model(&bike_actual.state());
         meas = add_noisies(meas);
+
+        // every time the measurement is ready, ukf is trigger to update.
         ukf.feed_and_update(meas, m_epoch, OVector::<f64, Const<1>>::zeros());
 
         println!(
@@ -134,6 +156,7 @@ fn main() {
     let error = &ukf.current_estimate().state() - &bike_actual.state();
     assert!(error.norm() < 0.5);
 }
+
 ```
 
 You can see the output as
