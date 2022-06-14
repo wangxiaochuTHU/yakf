@@ -3,11 +3,11 @@ use crate::time::{Duration, Epoch};
 use crate::linalg::allocator::Allocator;
 use crate::linalg::{DefaultAllocator, DimName, OVector};
 
-/// State trait.
+/// `State` trait.
 ///
-/// T: state vector dimension. e.g., Const<3> stands for 3-D
+/// `T`: state vector dimension. e.g., `Const<3>` stands for 3-D
 ///
-/// U: external vector dimension (You should assign any DimName to it, though it is not in-use currently)
+/// `U`: external vector dimension (You should assign any DimName to it, though it is not in-use currently)
 pub trait State<T, U>
 where
     T: DimName,

@@ -1,7 +1,7 @@
 /// import yakf crate
 extern crate yakf;
 /// import State trait, UKF filter struct, and MSSS sampling method struct
-use yakf::kf::{sigma_points::MinimalSkewSimplexSampling as MSSS, state::State, ukf::UKF};
+use yakf::kf::{MinimalSkewSimplexSampling as MSSS, State, UKF};
 
 /// import Re-exports of hifitime (for time) and nalgebra (for matrix)
 use yakf::{

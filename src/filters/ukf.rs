@@ -7,11 +7,15 @@ use crate::linalg::allocator::Allocator;
 use crate::linalg::{DefaultAllocator, DimName, OMatrix, OVector};
 use crate::time::{Duration, Epoch};
 
-/// T: state dimension, e.g., Const<6>
-/// T2:Samples number (e.g, T2 = T + 2 for Minimal skew simplex sampling method)
-/// M: measuremtent dimension
-/// U: External vector dimension
-/// S: A state that implements State trait
+/// `T`: state dimension, e.g., `Const<6>`
+///
+/// `T2`:Samples number (e.g, T2 = T + 2 for Minimal skew simplex sampling method)
+///
+/// `M`: measuremtent dimension
+///
+/// `U`: External vector dimension
+///
+/// `S`: A state that implements `State` trait
 #[allow(dead_code)]
 pub struct UKF<T, T2, M, U, S>
 where
@@ -248,7 +252,7 @@ where
             None => Err(YakfError::InverseErr),
         }
     }
-    pub fn measure(&self, state: &OVector<f64, T>) -> OVector<f64, M> {
+    fn measure(&self, state: &OVector<f64, T>) -> OVector<f64, M> {
         (self.measure_model)(state)
     }
 }

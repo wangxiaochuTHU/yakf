@@ -1,6 +1,8 @@
 use crate::linalg::allocator::Allocator;
 use crate::linalg::{DefaultAllocator, DimName, OMatrix, OVector};
 
+/// Any sampling method that implements `SamplingMethod<T, T2>` trait
+/// can be used by UKF struct.
 pub trait SamplingMethod<T, T2>
 where
     T: DimName,
@@ -13,9 +15,13 @@ where
 }
 
 /// Minimal skew simplex sampling method (MSSS)
-/// T:  dimension of state
-/// T2: number of sigma points
-/// Minimal skew simplex sampling (n+2) sigma points, i.e, T2 = T + 2.
+///
+/// `T`:  dimension of state.
+///
+/// `T2`: number of sigma points.
+///
+/// Minimal skew simplex sampling `n+2` sigma points, i.e. `T2.dim()` = `T::dim() + 2`.
+#[derive(Debug)]
 pub struct MinimalSkewSimplexSampling<T, T2>
 where
     T: DimName,
