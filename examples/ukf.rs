@@ -66,7 +66,11 @@ fn main() {
     // you SHOULD ALSO specify a sampling method for UKF.
     // currently, only MSSS method is done. MSSS has only one parameter `w0` to tune.
     // w0 belongs to [0.0 , 1.0].  this example takes w0 = 0.6.
+<<<<<<< HEAD
     let samling_method = MSSS::build(0.6).unwrap();
+=======
+    let samling_method = MSSS::build(0.6);
+>>>>>>> eebf3a4747944b9d50917165229874e3a540c582
 
     // finally, build the UKF.
     let mut ukf = UKF::<U2, Const<4>, U2, Const<1>, BikeState>::build(
