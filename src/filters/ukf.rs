@@ -125,25 +125,10 @@ where
 
     #[allow(dead_code)]
     fn state_samples(&self) -> Result<OMatrix<f64, T, T2>, YakfError> {
-        match (&self.prev_p + &self.process_q).cholesky() {
-            Some(cholesky) => {
-                let cho = cholesky.unpack();
-                let mut samples: OMatrix<f64, T, T2> = OMatrix::<f64, T, T2>::zeros();
-                let bases = self.sampling.bases();
-                for (i, mut col) in samples.column_iter_mut().enumerate() {
-                    let u_i = &bases.column(i);
-                    let chi = &self.prev_x.state() + &cho * u_i;
-                    col.copy_from(&chi);
-                }
-
-                // for (i, u) in self.sampling.bases().iter().enumerate() {
-                //     let chi = self.prev_x.state() + &cho * u;
-                //     samples.push(chi);
-                // }
-                Ok(samples)
-            }
-            None => Err(YakfError::CholeskyErr),
-        }
+        let samples = self
+            .sampling
+            .sampling_states(&(&self.prev_p + &self.process_q), &self.prev_x.state())?;
+        Ok(samples)
     }
 
     #[allow(dead_code)]

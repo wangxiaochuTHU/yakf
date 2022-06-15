@@ -9,8 +9,9 @@ Yet Another Kalman Filter Implementation, with `[no_std]` supported
 
 ## Sampling Method Status
 * Minimal Skew Simplex Sampling (n+2) ✅
+* Symmetrically-Distributed Sampling Method (2n+1) ✅
 
-
+***NOTE that some functions havn't been thoroughly tested, so please let me know if there is any error.***
 
 # Usage
 Add this to your Cargo.toml:
