@@ -139,7 +139,7 @@ mod tests {
             pub t: Epoch,
         }
         let sampling: MinimalSkewSimplexSampling<Const<6>, Const<8>> =
-            MinimalSkewSimplexSampling::build(0.6);
+            MinimalSkewSimplexSampling::build(0.6).unwrap();
 
         libc_println!("weights = {:?}", sampling.weights);
         let sum_w = sampling.weights.sum();
@@ -149,7 +149,7 @@ mod tests {
         let weighted_sum_u = sampling
             .weights
             .iter()
-            .zip(sampling.u_bases.column_iter())
+            .zip(sampling.u_bases.unwrap().column_iter())
             .fold(OVector::<f64, Const<6>>::zeros(), |acc, (w, u)| {
                 acc + *w * u
             });
@@ -222,7 +222,7 @@ mod tests {
         let mut ukf = UKF::<U2, Const<4>, U2, Const<1>, BikeState>::build(
             Box::new(dynamics),
             Box::new(measure_model),
-            Box::new(MinimalSkewSimplexSampling::build(0.6)),
+            Box::new(MinimalSkewSimplexSampling::build(0.6).unwrap()),
             BikeState::zeros(),
             OMatrix::<f64, U2, U2>::from_diagonal_element(1.0),
             OMatrix::<f64, U2, U2>::from_diagonal_element(0.01),

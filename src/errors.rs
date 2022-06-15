@@ -9,4 +9,7 @@ pub enum YakfError {
 
     // #[error("Try matrix inverse failed to proceed")]
     InverseErr,
+
+    // #[error("The dimensions are incorrectly set")]
+    DimensionMismatchErr,
 }
