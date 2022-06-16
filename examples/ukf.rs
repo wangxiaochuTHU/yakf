@@ -38,8 +38,8 @@ fn main() {
     /// you **MUST** implement State<T,U> for your custom state struct.
     ///
     impl State<U2, Const<1>> for BikeState {
-        fn state(&self) -> OVector<f64, U2> {
-            self.x.clone()
+        fn state(&self) -> &OVector<f64, U2> {
+            &self.x
         }
         fn set_state(&mut self, state: OVector<f64, U2>) {
             self.x = state;
@@ -136,6 +136,6 @@ fn main() {
             &ukf.current_estimate().state(),
         );
     }
-    let error = &ukf.current_estimate().state() - &bike_actual.state();
+    let error = ukf.current_estimate().state() - bike_actual.state();
     assert!(error.norm() < 0.5);
 }

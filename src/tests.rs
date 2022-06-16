@@ -25,8 +25,8 @@ mod tests {
             pub t: Epoch,
         }
         impl state::State<Const<2>, Const<1>> for BikeState {
-            fn state(&self) -> OVector<f64, U2> {
-                self.x.clone()
+            fn state(&self) -> &OVector<f64, U2> {
+                &self.x
             }
             fn set_state(&mut self, state: OVector<f64, U2>) {
                 self.x = state;
@@ -175,8 +175,8 @@ mod tests {
             pub t: Epoch,
         }
         impl state::State<Const<2>, Const<1>> for BikeState {
-            fn state(&self) -> OVector<f64, U2> {
-                self.x.clone()
+            fn state(&self) -> &OVector<f64, U2> {
+                &self.x
             }
             fn set_state(&mut self, state: OVector<f64, U2>) {
                 self.x = state;
@@ -250,7 +250,7 @@ mod tests {
                 &ukf.current_estimate().state(),
             );
         }
-        let error = &ukf.current_estimate().state() - &bike_actual.state();
+        let error = ukf.current_estimate().state() - bike_actual.state();
         assert!(error.norm() < 0.5);
     }
 }

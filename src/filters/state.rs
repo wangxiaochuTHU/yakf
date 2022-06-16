@@ -15,7 +15,7 @@ where
     DefaultAllocator: Allocator<f64, U> + Allocator<f64, T>,
 {
     /// get the state vec
-    fn state(&self) -> OVector<f64, T> {
+    fn state(&self) -> &OVector<f64, T> {
         unimplemented!()
     }
 
