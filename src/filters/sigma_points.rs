@@ -338,12 +338,12 @@ where
         // n stands for state dimention
         let n = T::dim();
 
-        let lamda = a as f64 * a as f64 * (n as f64 + k) - n as f64;
+        let lamda = (a as f64).powi(2) * (n as f64 + k) - n as f64;
         let lamda_plus_n = lamda + n as f64;
 
         // weight 0 is specified.
         self.weights_m[0] = lamda / lamda_plus_n;
-        self.weights_c[0] = self.weights_m[0] + (1.0 - a as f64 * a as f64 + b);
+        self.weights_c[0] = self.weights_m[0] + (1.0 - (a as f64).powi(2) + b);
         for i in 1..2 * n + 1 {
             self.weights_m[i] = 0.5 / lamda_plus_n;
             self.weights_c[i] = self.weights_c[i];
