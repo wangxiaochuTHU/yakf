@@ -1,7 +1,9 @@
 /// import yakf crate
 extern crate yakf;
 /// import State trait, UKF filter struct, and MSSS sampling method struct
-use yakf::kf::{MinimalSkewSimplexSampling as MSSS, State, UKF};
+use yakf::kf::{
+    MinimalSkewSimplexSampling as MSSS, State, SymmetricallyDistributedSampling as SDS, UKF,
+};
 
 /// import Re-exports of hifitime (for time) and nalgebra (for matrix)
 use yakf::{
@@ -64,12 +66,16 @@ fn main() {
         |x: &OVector<f64, U2>| OVector::<f64, U2>::new(5.0 * x[0] * x[0] * x[1], x[1] * x[0] * 2.0);
 
     // you SHOULD ALSO specify a sampling method for UKF.
-    // currently, only MSSS method is done. MSSS has only one parameter `w0` to tune.
-    // w0 belongs to [0.0 , 1.0].  this example takes w0 = 0.6.
-    let samling_method = MSSS::build(0.6).unwrap();
+    // for example, you can specify a MSSS method
+    type T2 = Const<4>;
+    let samling_method = MSSS::<U2, T2>::build(0.6).unwrap();
+
+    // or you can specify a SDS method as an alternative.
+    type _T2 = Const<5>;
+    let _samling_method = SDS::<U2, _T2>::build(1e-3, None, None).unwrap();
 
     // finally, build the UKF.
-    let mut ukf = UKF::<U2, Const<4>, U2, Const<1>, BikeState>::build(
+    let mut ukf = UKF::<U2, T2, U2, Const<1>, BikeState>::build(
         Box::new(dynamics),
         Box::new(measure_model),
         Box::new(samling_method),

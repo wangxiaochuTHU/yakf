@@ -31,7 +31,7 @@ where
 /// Minimal skew simplex sampling `n+2` sigma points, i.e. `T2.dim()` = `T::dim() + 2`.
 ///
 /// See the following paper for more detail.
-/// ```
+///
 /// @inproceedings{julier2002reduced,
 ///  title={Reduced sigma point filters for the propagation of means and covariances through nonlinear transformations},
 ///  author={Julier, Simon J and Uhlmann, Jeffrey K},
@@ -40,7 +40,7 @@ where
 ///  pages={887--892},
 ///  year={2002},
 ///}
-///```
+///
 #[derive(Debug)]
 pub struct MinimalSkewSimplexSampling<T, T2>
 where
@@ -209,7 +209,7 @@ where
 /// Symmetrically-distributed sampling `2n+1` sigma points, i.e. `T2.dim()` = `2 * T::dim() + 1`.
 ///
 /// See the following paper for more detail.
-/// ```
+///
 ///@inproceedings{wan2000unscented,
 /// title={The unscented Kalman filter for nonlinear estimation},
 /// author={Wan, Eric A and Van Der Merwe, Rudolph},
@@ -218,7 +218,7 @@ where
 /// year={2000},
 /// organization={Ieee}
 ///}
-///```
+///
 
 #[derive(Debug, Clone)]
 pub struct SymmetricallyDistributedSampling<T, T2>
@@ -295,6 +295,11 @@ where
         Allocator<f64, T2> + Allocator<f64, T, T2> + Allocator<f64, T> + Allocator<f64, T, T>,
 {
     #[allow(dead_code)]
+    /// a, stands for the spread extent from the mean. normally ranged in [1e-4, 1] and, typically, `a = 1e-3`.
+    ///
+    /// b, stands for the emphasis put on the 0-th sample. normally, b = `None` means using `b = Some(2.0)` by default, which is optimal for Gaussian distribution.
+    ///
+    /// k, stands for a third parameter. normally, `k = None` means using `k = Some(0.0)`, which is the most common case.
     pub fn build(a: f64, b: Option<f64>, k: Option<f64>) -> Result<Self, YakfError> {
         // by default b = 2.0, unless specified.
         let b = match b {
