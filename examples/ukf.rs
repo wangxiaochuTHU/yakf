@@ -16,7 +16,7 @@ fn main() {
     use rand::prelude::*;
 
     #[derive(Debug)]
-    /// define a custom struct to be the state. e.g., BikeState, has a 2-D vector x and a timestamped time t.
+    /// define a custom struct to be the state. e.g., BikeState, has a 2-D vector x (x[0]: position, x[1]: velocity) and a timestamped time t.
     pub struct BikeState {
         pub x: OVector<f64, U2>,
         pub t: Epoch,
@@ -72,6 +72,7 @@ fn main() {
 
     // or you can specify a SDS method as an alternative.
     type _T2 = Const<5>;
+
     let _samling_method = SDS::<U2, _T2>::build(1e-3, None, None).unwrap();
 
     // finally, build the UKF.

@@ -1,18 +1,18 @@
 [package]
+categories = ["science", "science::robotics", "navigation"]
 description = "Yet Another Kalman Filter Implementation, with [no_std] supported"
 edition = "2021"
+exclude = [
+  "target/*",
+  ".gitignore",
+  ".cargo/*",
+  "Cargo.lock",
+]
+keywords = ["no-std", "estimation", "filtering", "ukf"]
 license = "MIT OR Apache-2.0"
 name = "yakf"
 repository = "https://github.com/wangxiaochuTHU/yakf"
 version = "0.1.6"
-keywords = ["no-std", "estimation", "filtering","ukf"]
-categories = ["science", "science::robotics","navigation"]
-exclude = [
-    "target/*",
-    ".gitignore",
-    ".cargo/*",
-    "Cargo.lock",
-]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -20,8 +20,8 @@ exclude = [
 hifitime = "3.2.0"
 itertools = "0.10.3"
 log = "0.4"
-nalgebra = "0.31.0"
+nalgebra = {version = "0.31.0", features = ["default"]}
 
 [dev-dependencies]
-rand = "0.8.5"
 libc-print = "0.1.19"
+rand = "0.8.5"

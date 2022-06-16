@@ -253,4 +253,13 @@ mod tests {
         let error = ukf.current_estimate().state() - bike_actual.state();
         assert!(error.norm() < 0.5);
     }
+
+    #[test]
+    fn test_dynamic_matrix() {
+        extern crate libc_print;
+        use crate::filters::dstate::test;
+        use libc_print::libc_println;
+        let m = test();
+        libc_println!("m = {:?}", m);
+    }
 }
