@@ -5,7 +5,7 @@ license = "MIT OR Apache-2.0"
 name = "yakf"
 repository = "https://github.com/wangxiaochuTHU/yakf"
 version = "0.1.6"
-keywords = ["no-std", "estimation", "kalman filter","ukf"]
+keywords = ["no-std", "estimation", "filtering","ukf"]
 categories = ["science", "science::robotics","navigation"]
 exclude = [
     "target/*",
