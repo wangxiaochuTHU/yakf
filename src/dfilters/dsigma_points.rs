@@ -1,8 +1,8 @@
 use super::dzeros::{dmatrix_zeros, dvector_zeros};
 use crate::errors::YakfError;
 use crate::linalg::{DMatrix, DVector};
-/// Any sampling method that implements `SamplingMethod<T, T2>` trait
-/// can be used by UKF struct.
+/// Any sampling method that implements `DSamplingMethod` trait
+/// can be used by DUKF struct.
 pub trait DSamplingMethod {
     fn weights_c(&self) -> &DVector<f64>;
     fn weights_m(&self) -> &DVector<f64>;
@@ -16,23 +16,7 @@ pub trait DSamplingMethod {
     ) -> Result<DMatrix<f64>, YakfError>;
 }
 
-/// Minimal skew simplex sampling method (MSSS)
-/// `T`:  dimension of state.
-///
-/// `T2`: number of sigma points.
-///
-/// Minimal skew simplex sampling `n+2` sigma points, i.e. `T2.dim()` = `T::dim() + 2`.
-///
-/// See the following paper for more detail.
-///
-/// @inproceedings{julier2002reduced,
-///  title={Reduced sigma point filters for the propagation of means and covariances through nonlinear transformations},
-///  author={Julier, Simon J and Uhlmann, Jeffrey K},
-///  booktitle={Proceedings of the 2002 American Control Conference (IEEE Cat. No. CH37301)},
-///  volume={2},
-///  pages={887--892},
-///  year={2002},
-///}
+/// Minimal skew simplex sampling method (MSSS) for DUKF
 ///
 #[derive(Debug)]
 pub struct DMinimalSkewSimplexSampling {
