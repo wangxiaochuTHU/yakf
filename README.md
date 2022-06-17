@@ -11,7 +11,7 @@ Yet Another Kalman Filter Implementation, with `[no_std]` supported
 * Minimal Skew Simplex Sampling (n+2) ✅
 * Symmetrically-Distributed Sampling Method (2n+1) ✅
 
-### Static V.S Dynamic Uses
+## Static V.S Dynamic Cases
 * For ***statically***-sized state whose dimension is known in compile time, refer to `yakf::filters`
 * For ***dynamically***-sized state whose dimension may vary in run time, refer to `yakf::dfilters`
 
