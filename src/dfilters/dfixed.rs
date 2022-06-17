@@ -11,3 +11,9 @@ pub fn dmatrix_zeros(nrows: usize, ncols: usize) -> DMatrix<f64> {
 pub fn dvector_zeros(nrows: usize) -> DVector<f64> {
     DVector::<f64>::from_row_slice(vec![0_f64; nrows].as_slice())
 }
+
+/// TODO: I cann't figure out why `DVector::<f64>::identity(nrows,ncols)` doesn't work, so init a vector in this way.
+pub fn dmatrix_identity(nrows: usize, ncols: usize) -> DMatrix<f64> {
+    let one_col = DVector::<f64>::from_row_slice(vec![1_f64; nrows].as_slice());
+    DMatrix::<f64>::from_columns(vec![one_col; ncols].as_slice())
+}

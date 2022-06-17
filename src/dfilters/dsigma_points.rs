@@ -1,4 +1,4 @@
-use super::dzeros::{dmatrix_zeros, dvector_zeros};
+use super::dfixed::{dmatrix_zeros, dvector_zeros};
 use crate::errors::YakfError;
 use crate::linalg::{DMatrix, DVector};
 /// Any sampling method that implements `DSamplingMethod` trait

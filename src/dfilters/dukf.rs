@@ -1,6 +1,6 @@
+use super::dfixed::{dmatrix_zeros, dvector_zeros};
 use super::dsigma_points::DSamplingMethod;
 use super::dstate::DState;
-use super::dzeros::{dmatrix_zeros, dvector_zeros};
 use crate::alloc::boxed::Box;
 use crate::errors::YakfError;
 use crate::itertools::izip;
