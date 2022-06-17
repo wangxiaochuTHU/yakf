@@ -19,12 +19,12 @@ pub mod linalg {
 
 /// Export yakf
 pub mod kf {
+    pub use super::dfilters::{dsigma_points::*, dstate::*, dukf::*};
     pub use super::errors::YakfError;
-    pub use super::filters::sigma_points::*;
-    pub use super::filters::state::*;
-    pub use super::filters::ukf::*;
+    pub use super::filters::{sigma_points::*, state::*, ukf::*};
 }
 
+pub mod dfilters;
 mod errors;
-mod filters;
+pub mod filters;
 mod tests;

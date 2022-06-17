@@ -164,7 +164,7 @@ mod tests {
 
         use crate::linalg::{Const, OMatrix, OVector, U2};
         use crate::time::{self, Epoch, Unit};
-        use alloc::boxed::Box;
+        use alloc::{boxed::Box, vec::Vec};
         use rand::prelude::*;
         extern crate libc_print;
         use libc_print::libc_println;
@@ -210,23 +210,23 @@ mod tests {
         let dynamics = |x: &OVector<f64, U2>, _ext: &OVector<f64, Const<1>>, dt: Duration| {
             OVector::<f64, U2>::new(x[0] + x[1] * dt.in_seconds(), x[1])
         };
-        let measure_model = |x: &OVector<f64, U2>| {
-            OVector::<f64, U2>::new(5.0 * x[0] * x[0] * x[1], x[1] * x[0] * 2.0)
-        };
+        let measure_model = |x: &OVector<f64, U2>| OVector::<f64, U2>::new(x[0], x[1]);
         let mut add_noisies = |mut y: OVector<f64, U2>| {
-            y[0] += rng.gen_range(-1.0..1.0);
+            y[0] += rng.gen_range(-3.0..3.0);
             y[1] += rng.gen_range(-0.1..0.1);
             y
         };
+        let mut actual_normed_noise: Vec<f64> = Vec::new();
+        let mut estimate_normed_error: Vec<f64> = Vec::new();
 
         let mut ukf = UKF::<U2, Const<4>, U2, Const<1>, BikeState>::build(
             Box::new(dynamics),
             Box::new(measure_model),
             Box::new(MinimalSkewSimplexSampling::build(0.6).unwrap()),
             BikeState::zeros(),
+            OMatrix::<f64, U2, U2>::from_diagonal_element(10.0),
             OMatrix::<f64, U2, U2>::from_diagonal_element(1.0),
-            OMatrix::<f64, U2, U2>::from_diagonal_element(0.01),
-            OMatrix::<f64, U2, U2>::from_diagonal(&OVector::<f64, U2>::new(1.0, 0.01)),
+            OMatrix::<f64, U2, U2>::from_diagonal(&OVector::<f64, U2>::new(1.0, 0.001)),
         );
         libc_println!(
             "bike actual = {:?}, ukf estimate = {:?}",
@@ -235,7 +235,8 @@ mod tests {
         );
 
         let ukf_base_epoch = ukf.current_estimate().epoch();
-        for _i in 0..1000 {
+        let nums_measure = 500_usize;
+        for i in 0..nums_measure {
             let dt = Duration::from_f64(1.0, Unit::Second);
             let m_epoch = ukf_base_epoch + dt;
             let _ = bike_actual.propagate(&dynamics, dt, OVector::<f64, Const<1>>::zeros());
@@ -243,21 +244,29 @@ mod tests {
             meas = add_noisies(meas);
             ukf.feed_and_update(meas, m_epoch, OVector::<f64, Const<1>>::zeros());
 
-            libc_println!(
-                "bike actual = {:?}, meas = {:.3?}, ukf estimate = {:.3?}",
-                &bike_actual.state(),
-                meas,
-                &ukf.current_estimate().state(),
-            );
+            if i > nums_measure / 3 {
+                actual_normed_noise.push((&meas - bike_actual.state()).norm());
+                estimate_normed_error
+                    .push((ukf.current_estimate().state() - bike_actual.state()).norm());
+            }
         }
-        let error = ukf.current_estimate().state() - bike_actual.state();
-        assert!(error.norm() < 0.5);
+        let nums = actual_normed_noise.len();
+        let noise_metric: f64 = actual_normed_noise
+            .into_iter()
+            .fold(0.0, |acc, x| acc + x / nums as f64);
+        let error_metric: f64 = estimate_normed_error
+            .into_iter()
+            .fold(0.0, |acc, x| acc + x / nums as f64);
+
+        assert!(error_metric < noise_metric);
+        libc_println!("error_metric = {:?}", error_metric);
+        libc_println!("noise_metric = {:?}", noise_metric);
     }
 
     #[test]
     fn test_dynamic_matrix() {
         extern crate libc_print;
-        use crate::filters::dstate::test;
+        use crate::dfilters::dstate::test;
         use libc_print::libc_println;
         let m = test();
         libc_println!("m = {:?}", m);

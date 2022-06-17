@@ -1,26 +1,19 @@
+use super::dzeros::{dmatrix_zeros, dvector_zeros};
 use crate::errors::YakfError;
-use crate::linalg::allocator::Allocator;
-use crate::linalg::{DefaultAllocator, DimName, OMatrix, OVector};
-
+use crate::linalg::{DMatrix, DVector};
 /// Any sampling method that implements `SamplingMethod<T, T2>` trait
 /// can be used by UKF struct.
-pub trait SamplingMethod<T, T2>
-where
-    T: DimName,
-    T2: DimName,
-    DefaultAllocator:
-        Allocator<f64, T2> + Allocator<f64, T> + Allocator<f64, T, T2> + Allocator<f64, T, T>,
-{
-    fn weights_c(&self) -> &OVector<f64, T2>;
-    fn weights_m(&self) -> &OVector<f64, T2>;
-    fn bases(&self) -> Option<&OMatrix<f64, T, T2>>;
+pub trait DSamplingMethod {
+    fn weights_c(&self) -> &DVector<f64>;
+    fn weights_m(&self) -> &DVector<f64>;
+    fn bases(&self) -> Option<&DMatrix<f64>>;
     fn has_bases(&self) -> bool;
     fn get_k(&self) -> Option<f64>;
     fn sampling_states(
         &self,
-        p: &OMatrix<f64, T, T>,
-        state: &OVector<f64, T>,
-    ) -> Result<OMatrix<f64, T, T2>, YakfError>;
+        p: &DMatrix<f64>,
+        state: &DVector<f64>,
+    ) -> Result<DMatrix<f64>, YakfError>;
 }
 
 /// Minimal skew simplex sampling method (MSSS)
@@ -42,31 +35,19 @@ where
 ///}
 ///
 #[derive(Debug)]
-pub struct MinimalSkewSimplexSampling<T, T2>
-where
-    T: DimName,
-    T2: DimName,
-    DefaultAllocator:
-        Allocator<f64, T2> + Allocator<f64, T> + Allocator<f64, T, T2> + Allocator<f64, T, T>,
-{
-    pub weights: OVector<f64, T2>,
-    pub u_bases: Option<OMatrix<f64, T, T2>>,
+pub struct DMinimalSkewSimplexSampling {
+    pub weights: DVector<f64>,
+    pub u_bases: Option<DMatrix<f64>>,
 }
 
-impl<T, T2> SamplingMethod<T, T2> for MinimalSkewSimplexSampling<T, T2>
-where
-    T: DimName,
-    T2: DimName,
-    DefaultAllocator:
-        Allocator<f64, T2> + Allocator<f64, T> + Allocator<f64, T, T2> + Allocator<f64, T, T>,
-{
-    fn weights_c(&self) -> &OVector<f64, T2> {
+impl DSamplingMethod for DMinimalSkewSimplexSampling {
+    fn weights_c(&self) -> &DVector<f64> {
         &self.weights
     }
-    fn weights_m(&self) -> &OVector<f64, T2> {
+    fn weights_m(&self) -> &DVector<f64> {
         &self.weights
     }
-    fn bases(&self) -> Option<&OMatrix<f64, T, T2>> {
+    fn bases(&self) -> Option<&DMatrix<f64>> {
         self.u_bases.as_ref()
     }
     fn has_bases(&self) -> bool {
@@ -77,13 +58,15 @@ where
     }
     fn sampling_states(
         &self,
-        p: &OMatrix<f64, T, T>,
-        state: &OVector<f64, T>,
-    ) -> Result<OMatrix<f64, T, T2>, YakfError> {
+        p: &DMatrix<f64>,
+        state: &DVector<f64>,
+    ) -> Result<DMatrix<f64>, YakfError> {
         match p.clone_owned().cholesky() {
             Some(cholesky) => {
                 let cho = cholesky.unpack();
-                let mut samples: OMatrix<f64, T, T2> = OMatrix::<f64, T, T2>::zeros();
+                let nrows = state.len();
+                let ncols = nrows + 2;
+                let mut samples = dmatrix_zeros(nrows, ncols);
                 let bases = self.bases().unwrap();
                 for (i, mut col) in samples.column_iter_mut().enumerate() {
                     let u_i = bases.column(i);
@@ -98,40 +81,28 @@ where
     }
 }
 
-impl<T, T2> MinimalSkewSimplexSampling<T, T2>
-where
-    T: DimName,
-    T2: DimName,
-    DefaultAllocator:
-        Allocator<f64, T2> + Allocator<f64, T, T2> + Allocator<f64, T> + Allocator<f64, T, T>,
-{
+impl DMinimalSkewSimplexSampling {
     #[allow(dead_code)]
-    pub fn build(w0: f64) -> Result<Self, YakfError> {
-        let mut sampling = Self::empty()?;
-        sampling.set_weights(w0);
-        sampling.expand_bases(T::dim());
+    pub fn build(w0: f64, n: usize) -> Result<Self, YakfError> {
+        let mut sampling = Self::empty(n)?;
+        // info!("sampling = {:?}", sampling);
+        // panic!();
+        sampling.set_weights(w0, n);
+        sampling.expand_bases(n);
         Ok(sampling)
     }
 
     #[allow(dead_code)]
     /// generate an object with fields filled with zeros.
-    fn empty() -> Result<Self, YakfError> {
-        if T2::dim() != T::dim() + 2 {
-            error!("Weights dimention should be set as (n + 2), where n is the state dimention.");
-            Err(YakfError::DimensionMismatchErr)
-        } else {
-            Ok(Self {
-                weights: OVector::<f64, T2>::zeros(),
-                u_bases: None,
-            })
-        }
+    fn empty(n: usize) -> Result<Self, YakfError> {
+        Ok(Self {
+            weights: dvector_zeros(n + 2),
+            u_bases: None,
+        })
     }
 
     /// sets the parameter that is required by MSSS
-    fn set_weights(&mut self, w0: f64) {
-        // n stands for state dimention
-        let n = T::dim();
-
+    fn set_weights(&mut self, w0: f64, n: usize) {
         // weight 0 is specified.
         self.weights[0] = w0;
 
@@ -157,10 +128,10 @@ where
         // TODO: How to optimize this progress?
 
         // cols to save columns
-        let mut cols: OMatrix<f64, T, T2> = OMatrix::<f64, T, T2>::zeros();
+        let mut cols = dmatrix_zeros(n, n + 2);
 
         // col-0 is zero column
-        let col0 = OVector::<f64, T>::zeros();
+        let col0 = dvector_zeros(n);
 
         let mut w_iter =
             self.weights
@@ -169,13 +140,13 @@ where
                 .map(|(i, w)| if i == 0 { 0.0 } else { 1.0 / (2.0 * w).sqrt() });
 
         // col-1 can be expanded as
-        let mut col1 = OVector::<f64, T>::zeros();
+        let mut col1 = dvector_zeros(n);
         w_iter.next();
         for k in 0..n {
             col1[k] = -w_iter.next().unwrap(); // this is because that we want: col1[k] = w_iter[k+1]
         }
 
-        for i in 0..T2::dim() {
+        for i in 0..n + 2 {
             if i == 0 {
                 // save col0
                 cols.set_column(i, &col0);
@@ -195,59 +166,27 @@ where
         }
 
         // Now, columns should be (n+2) in count. Finally, build u_bases from these columns.
-        self.u_bases = Some(OMatrix::<f64, T, T2>::from(cols));
+        self.u_bases = Some(DMatrix::<f64>::from(cols));
     }
 }
 
-/* Symmetrically-Distributed Sampling Method */
-
-/// Symmetrically-Distributed Sampling Method (SDS)
-/// `T`:  dimension of state.
-///
-/// `T2`: number of sigma points.
-///
-/// Symmetrically-distributed sampling `2n+1` sigma points, i.e. `T2.dim()` = `2 * T::dim() + 1`.
-///
-/// See the following paper for more detail.
-///
-///@inproceedings{wan2000unscented,
-/// title={The unscented Kalman filter for nonlinear estimation},
-/// author={Wan, Eric A and Van Der Merwe, Rudolph},
-/// booktitle={Proceedings of the IEEE 2000 Adaptive Systems for Signal Processing, Communications, and Control Symposium (Cat. No. 00EX373)},
-/// pages={153--158},
-/// year={2000},
-/// organization={Ieee}
-///}
-///
-
 #[derive(Debug)]
-pub struct SymmetricallyDistributedSampling<T, T2>
-where
-    T: DimName,
-    T2: DimName,
-    DefaultAllocator:
-        Allocator<f64, T2> + Allocator<f64, T> + Allocator<f64, T, T2> + Allocator<f64, T, T>,
-{
-    pub weights_c: OVector<f64, T2>,
-    pub weights_m: OVector<f64, T2>,
-    pub u_bases: OMatrix<f64, T, T2>,
+pub struct DSymmetricallyDistributedSampling {
+    pub n: usize,
+    pub weights_c: DVector<f64>,
+    pub weights_m: DVector<f64>,
+    pub u_bases: DMatrix<f64>,
     pub k: f64,
 }
 
-impl<T, T2> SamplingMethod<T, T2> for SymmetricallyDistributedSampling<T, T2>
-where
-    T: DimName,
-    T2: DimName,
-    DefaultAllocator:
-        Allocator<f64, T2> + Allocator<f64, T> + Allocator<f64, T, T2> + Allocator<f64, T, T>,
-{
-    fn weights_c(&self) -> &OVector<f64, T2> {
+impl DSamplingMethod for DSymmetricallyDistributedSampling {
+    fn weights_c(&self) -> &DVector<f64> {
         &self.weights_c
     }
-    fn weights_m(&self) -> &OVector<f64, T2> {
+    fn weights_m(&self) -> &DVector<f64> {
         &self.weights_m
     }
-    fn bases(&self) -> Option<&OMatrix<f64, T, T2>> {
+    fn bases(&self) -> Option<&DMatrix<f64>> {
         None
     }
     fn has_bases(&self) -> bool {
@@ -259,19 +198,19 @@ where
 
     fn sampling_states(
         &self,
-        p: &OMatrix<f64, T, T>,
-        state: &OVector<f64, T>,
-    ) -> Result<OMatrix<f64, T, T2>, YakfError> {
+        p: &DMatrix<f64>,
+        state: &DVector<f64>,
+    ) -> Result<DMatrix<f64>, YakfError> {
         match p.clone().cholesky() {
             Some(cholesky) => {
                 let cho = cholesky.unpack();
-                let mut samples: OMatrix<f64, T, T2> = OMatrix::<f64, T, T2>::zeros();
+                let mut samples: DMatrix<f64> = dmatrix_zeros(self.n, 2 * self.n + 1);
                 let sqrt_lamda_plus_n = self.get_k().unwrap().sqrt();
                 for (i, mut col) in samples.column_iter_mut().enumerate() {
                     if i == 0 {
                         let chi = state;
                         col.copy_from(&chi);
-                    } else if i <= T::dim() {
+                    } else if i <= self.n {
                         let chi = state + sqrt_lamda_plus_n * &cho.column(i);
                         col.copy_from(&chi);
                     } else {
@@ -287,20 +226,14 @@ where
     }
 }
 
-impl<T, T2> SymmetricallyDistributedSampling<T, T2>
-where
-    T: DimName,
-    T2: DimName,
-    DefaultAllocator:
-        Allocator<f64, T2> + Allocator<f64, T, T2> + Allocator<f64, T> + Allocator<f64, T, T>,
-{
+impl DSymmetricallyDistributedSampling {
     #[allow(dead_code)]
     /// a, stands for the spread extent from the mean. normally ranged in [1e-4, 1] and, typically, `a = 1e-3`.
     ///
     /// b, stands for the emphasis put on the 0-th sample. normally, b = `None` means using `b = Some(2.0)` by default, which is optimal for Gaussian distribution.
     ///
     /// k, stands for a third parameter. normally, `k = None` means using `k = Some(0.0)`, which is the most common case.
-    pub fn build(a: f64, b: Option<f64>, k: Option<f64>) -> Result<Self, YakfError> {
+    pub fn build(a: f64, b: Option<f64>, k: Option<f64>, n: usize) -> Result<Self, YakfError> {
         // by default b = 2.0, unless specified.
         let b = match b {
             Some(v) => v,
@@ -313,30 +246,26 @@ where
             None => 0_f64,
         };
 
-        let mut sampling = Self::empty()?;
+        let mut sampling = Self::empty(n)?;
         sampling.set_weights(a, b, k);
         Ok(sampling)
     }
 
     #[allow(dead_code)]
     /// generate an object with fields filled with zeros.
-    fn empty() -> Result<Self, YakfError> {
-        if T2::dim() != 2 * T::dim() + 1 {
-            error!("Weights dimention should be set as (n + 2), where n is the state dimention.");
-            Err(YakfError::DimensionMismatchErr)
-        } else {
-            Ok(Self {
-                weights_c: OVector::<f64, T2>::zeros(),
-                weights_m: OVector::<f64, T2>::zeros(),
-                u_bases: OMatrix::<f64, T, T2>::zeros(),
-                k: 0_f64,
-            })
-        }
+    fn empty(n: usize) -> Result<Self, YakfError> {
+        Ok(Self {
+            n: n,
+            weights_c: dvector_zeros(2 * n + 1),
+            weights_m: dvector_zeros(2 * n + 1),
+            u_bases: dmatrix_zeros(n, 2 * n + 1),
+            k: 0_f64,
+        })
     }
     /// sets the parameter that is required by MSSS
     fn set_weights(&mut self, a: f64, b: f64, k: f64) -> Option<f64> {
         // n stands for state dimention
-        let n = T::dim();
+        let n = self.n;
 
         let lamda = (a as f64).powi(2) * (n as f64 + k) - n as f64;
         let lamda_plus_n = lamda + n as f64;

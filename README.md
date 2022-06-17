@@ -5,11 +5,15 @@ Yet Another Kalman Filter Implementation, with `[no_std]` supported
 # Current implementation status
 
 ## Filter Status
-* UKF ✅
+* UKF ✅ 
 
 ## Sampling Method Status
 * Minimal Skew Simplex Sampling (n+2) ✅
 * Symmetrically-Distributed Sampling Method (2n+1) ✅
+
+### Static V.S Dynamic Uses
+* For ***statically***-sized state whose dimension is known in compile time, refer to `yakf::filters`
+* For ***dynamically***-sized state whose dimension may vary in run time, refer to `yakf::dfilters`
 
 ***NOTE that some functions havn't been thoroughly tested, so please let me know if there is any error.***
 
@@ -20,7 +24,7 @@ Add this to your Cargo.toml:
 yakf = "0.1"
 ```
 
-Example:
+Example (statically-sized):
 ```
 /// import yakf crate
 extern crate yakf;
@@ -40,7 +44,7 @@ fn main() {
     use rand::prelude::*;
 
     #[derive(Debug)]
-    /// define a custom struct to be the state. e.g., BikeState, has a 2-D vector x and a timestamped time t.
+    /// define a custom struct to be the state. e.g., BikeState, has a 2-D vector x (x[0]: position, x[1]: velocity) and a timestamped time t.
     pub struct BikeState {
         pub x: OVector<f64, U2>,
         pub t: Epoch,
@@ -86,8 +90,7 @@ fn main() {
     // you SHOULD ALSO provide a function for UKF yielding measurements based on given state.
     //
     // for example, assume the measuring has a 2-D measurement.
-    let measure_model =
-        |x: &OVector<f64, U2>| OVector::<f64, U2>::new(5.0 * x[0] * x[0] * x[1], x[1] * x[0] * 2.0);
+    let measure_model = |x: &OVector<f64, U2>| OVector::<f64, U2>::new(x[0], x[1]);
 
     // you SHOULD ALSO specify a sampling method for UKF.
     // for example, you can specify a MSSS method
@@ -96,6 +99,7 @@ fn main() {
 
     // or you can specify a SDS method as an alternative.
     type _T2 = Const<5>;
+
     let _samling_method = SDS::<U2, _T2>::build(1e-3, None, None).unwrap();
 
     // finally, build the UKF.
@@ -104,16 +108,16 @@ fn main() {
         Box::new(measure_model),
         Box::new(samling_method),
         BikeState::zeros(),
+        OMatrix::<f64, U2, U2>::from_diagonal_element(10.0),
         OMatrix::<f64, U2, U2>::from_diagonal_element(1.0),
-        OMatrix::<f64, U2, U2>::from_diagonal_element(0.01),
-        OMatrix::<f64, U2, U2>::from_diagonal(&OVector::<f64, U2>::new(1.0, 0.01)),
+        OMatrix::<f64, U2, U2>::from_diagonal(&OVector::<f64, U2>::new(1.0, 0.001)),
     );
 
     // you can then use ukf to estimate the state vector.
 
     let mut rng = rand::thread_rng();
     let mut add_noisies = |mut y: OVector<f64, U2>| {
-        y[0] += rng.gen_range(-1.0..1.0);
+        y[0] += rng.gen_range(-3.0..3.0);
         y[1] += rng.gen_range(-0.1..0.1);
         y
     };
@@ -126,12 +130,15 @@ fn main() {
         &bike_actual,
         &ukf.current_estimate()
     );
+    let mut actual_normed_noise: Vec<f64> = Vec::new();
+    let mut estimate_normed_error: Vec<f64> = Vec::new();
+    let nums_measure = 500_usize;
 
     // you can set an arbitary time base for ukf.
     // a timing system would help in aligning data.
     let ukf_base_epoch = ukf.current_estimate().epoch();
 
-    for _i in 0..1000 {
+    for i in 0..nums_measure {
         let dt = Duration::from_f64(1.0, Unit::Second);
         let m_epoch = ukf_base_epoch + dt;
 
@@ -152,6 +159,11 @@ fn main() {
 
         // every time the measurement is ready, ukf is trigger to update.
         ukf.feed_and_update(meas, m_epoch, OVector::<f64, Const<1>>::zeros());
+        if i > nums_measure / 3 {
+            actual_normed_noise.push((&meas - bike_actual.state()).norm());
+            estimate_normed_error
+                .push((ukf.current_estimate().state() - bike_actual.state()).norm());
+        }
 
         println!(
             "bike actual = {:?}, meas = {:.3?}, ukf estimate = {:.3?}",
@@ -160,19 +172,30 @@ fn main() {
             &ukf.current_estimate().state(),
         );
     }
-    let error = ukf.current_estimate().state() - bike_actual.state();
-    assert!(error.norm() < 0.5);
+    let nums = actual_normed_noise.len();
+    let noise_metric: f64 = actual_normed_noise
+        .into_iter()
+        .fold(0.0, |acc, x| acc + x / nums as f64);
+    let error_metric: f64 = estimate_normed_error
+        .into_iter()
+        .fold(0.0, |acc, x| acc + x / nums as f64);
+    println!(
+        "noise_metric = {:?}, error_metric = {:?}",
+        noise_metric, error_metric
+    );
+    assert!(error_metric < noise_metric);
 }
 
 
 
+
 ```
 
-You can see the output as
+You may see the output as
 ```
 .. .. ..
-bike actual = [[992.0, 1.0]], meas = [[4920320.466, 1983.914]], ukf estimate = [[992.208, 1.000]]
-bike actual = [[993.0, 1.0]], meas = [[4930244.722, 1986.052]], ukf estimate = [[993.127, 1.000]]
-bike actual = [[994.0, 1.0]], meas = [[4940180.252, 1987.912]], ukf estimate = [[994.227, 1.000]]
-bike actual = [[995.0, 1.0]], meas = [[4950125.125, 1989.992]], ukf estimate = [[995.159, 1.000]]
+actual = [493.0, 1.0], meas = [493.281, 1.073], estimate = [492.553, 1.073]
+actual = [494.0, 1.0], meas = [492.615, 0.941], estimate = [492.598, 0.941]
+actual = [495.0, 1.0], meas = [496.849, 1.019], estimate = [495.710, 1.019]
+noise_metric = 1.5346849337852513, error_metric = 1.2218914483371828
 ```
