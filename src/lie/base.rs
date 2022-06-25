@@ -10,6 +10,10 @@ use crate::linalg::allocator::Allocator;
 use crate::linalg::{DefaultAllocator, DimName, OMatrix, OVector, SMatrix, U3, U4, U6};
 
 const SMALL_FLOAT: f64 = 1e-6;
+
+/// TODO: retain a best way to store the group.
+/// This struct current is in redundancy.
+/// both `(r,t)` and `m`, can determine the group.
 #[derive(Debug)]
 pub struct LieGroupSE3 {
     // rotation matrix
