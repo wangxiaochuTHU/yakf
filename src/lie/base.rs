@@ -1,3 +1,4 @@
+use crate::alloc::vec::Vec;
 use crate::time::{Duration, Epoch};
 use alloc::borrow::ToOwned;
 use core::convert::AsRef;
@@ -84,16 +85,49 @@ impl LieGroupSE3 {
     }
     pub fn from_hat(m: &OMatrix<f64, U4, U4>) -> Self {
         let m = m.exp();
-        let mut r = OMatrix::<f64, U3, U3>::zeros();
-        let mut t = OVector::<f64, U3>::zeros();
-        r.copy_from(&m.slice((0, 0), (3, 3)));
-        t.copy_from(&m.slice((0, 3), (3, 1)));
+        let (r, t) = get_r_t_from_se3m(&m);
         LieGroupSE3 { r: r, t: t, m: m }
     }
+
     pub fn to_hat(&self) -> Option<OMatrix<f64, U4, U4>> {
         match self.to_algebra() {
             Some(vec6) => Some(hat4(&vec6)),
             None => None,
+        }
+    }
+
+    pub fn delta_to_target(&self, end: &Self) -> Option<Self> {
+        let start_inv_op = self.m.try_inverse();
+        match start_inv_op {
+            Some(start_inv) => {
+                let m = end.m * start_inv;
+                let (r, t) = get_r_t_from_se3m(&m);
+                Some(LieGroupSE3 { r: r, t: t, m: m })
+            }
+            None => {
+                // TODO: element in SE3 should always has an inverse.
+                // Does it mean I can unwrap m.try_inverse directly?
+                None
+            }
+        }
+    }
+
+    pub fn interpolation(&self, end: &Self, nums_inter: usize) -> Option<Vec<Self>> {
+        let delta = self.delta_to_target(end).unwrap(); // TODO: unwrap here can always succeed?
+        if let Some(delta_algebra) = delta.to_hat() {
+            let d = 1.0 / (nums_inter + 1) as f64;
+            let mut intergroups: Vec<Self> = Vec::new();
+            for i in 0..nums_inter {
+                let a = i as f64 * d;
+                let d_delta_algebra = a * delta_algebra;
+                let d_delta = d_delta_algebra.exp();
+                let m = d_delta * &self.m;
+                let (r, t) = get_r_t_from_se3m(&m);
+                intergroups.push(LieGroupSE3 { r: r, t: t, m: m })
+            }
+            Some(intergroups)
+        } else {
+            None
         }
     }
 }
@@ -175,6 +209,14 @@ fn hat4(vec6: &LieVectorSE3) -> OMatrix<f64, U4, U4> {
     m.index_mut((0..3, 0..3)).copy_from(&top_left);
     m.index_mut((0..3, 3)).copy_from(top_right);
     m
+}
+
+fn get_r_t_from_se3m(m: &OMatrix<f64, U4, U4>) -> (OMatrix<f64, U3, U3>, OVector<f64, U3>) {
+    let mut r = OMatrix::<f64, U3, U3>::zeros();
+    let mut t = OVector::<f64, U3>::zeros();
+    r.copy_from(&m.slice((0, 0), (3, 3)));
+    t.copy_from(&m.slice((0, 3), (3, 1)));
+    (r, t)
 }
 
 // SE3 vee
