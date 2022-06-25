@@ -6,7 +6,7 @@ Yet Another Kalman Filter Implementation, with `[no_std]` supported
 
 ## Filter Status
 * UKF ✅ 
-* EKF (Only dynamically-sized version) ✅ 
+* EKF (Only dynamically-sized case) ✅ 
 
 ## Sampling Method Status
 * Minimal Skew Simplex Sampling (n+2) ✅
