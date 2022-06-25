@@ -12,7 +12,7 @@ keywords = ["no-std", "estimation", "filtering", "ukf"]
 license = "MIT OR Apache-2.0"
 name = "yakf"
 repository = "https://github.com/wangxiaochuTHU/yakf"
-version = "0.1.8"
+version = "0.1.9"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -20,7 +20,7 @@ version = "0.1.8"
 hifitime = "3.2.0"
 itertools = "0.10.3"
 log = "0.4"
-nalgebra = {version = "0.31.0", features = ["default"]}
+nalgebra = {git = "https://github.com/dimforge/nalgebra", features = ["default"]}
 
 [dev-dependencies]
 libc-print = "0.1.19"

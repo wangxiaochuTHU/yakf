@@ -6,7 +6,7 @@ Yet Another Kalman Filter Implementation, with `[no_std]` supported
 
 ## Filter Status
 * UKF ✅ 
-* EKF (Only dynamically-sized case) ✅ 
+* EKF (Only dynamically-sized version) ✅ 
 
 ## Sampling Method Status
 * Minimal Skew Simplex Sampling (n+2) ✅
@@ -15,6 +15,12 @@ Yet Another Kalman Filter Implementation, with `[no_std]` supported
 ## Static V.S Dynamic Cases
 * For ***statically***-sized state whose dimension is known in compile time, refer to `yakf::filters`
 * For ***dynamically***-sized state whose dimension may vary in run time, refer to `yakf::dfilters`
+
+## Lie Group Status
+* SE(3) Struct , Adjoint matrix, Adjoint action✅
+* se(3) Struct ✅
+* SE(3) <--> se(3) ✅
+* ***TODO: Lie Group Kalman Filter*** 
 
 ***NOTE that some functions havn't been thoroughly tested, so please let me know if there is any error.***
 

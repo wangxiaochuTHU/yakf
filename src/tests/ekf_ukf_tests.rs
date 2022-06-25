@@ -5,12 +5,6 @@ mod tests {
     use crate::filters::state::State;
 
     #[test]
-    fn it_works() {
-        let result = 2 + 2;
-        assert_eq!(result, 4);
-    }
-
-    #[test]
     fn test_state() {
         use crate::filters::state;
 

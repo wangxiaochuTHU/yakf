@@ -22,9 +22,11 @@ pub mod kf {
     pub use super::dfilters::{dekf::*, dsigma_points::*, dstate::*, dukf::*};
     pub use super::errors::YakfError;
     pub use super::filters::{sigma_points::*, state::*, ukf::*};
+    pub use super::lie::base::{LieGroupSE3, LieVectorSE3};
 }
 
 pub mod dfilters;
 mod errors;
 pub mod filters;
+pub mod lie;
 mod tests;
