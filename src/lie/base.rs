@@ -117,14 +117,14 @@ impl LieGroupSE3 {
         adj
     }
 
-    ///  re-express v , from self's local frame to global frame
+    ///  re-express vector v , from self's local frame to global frame
     pub fn adjoint_action(&self, v: &LieAlgebraSE3) -> LieAlgebraSE3 {
         let group_inv = self.inverse();
 
         self.m * v * group_inv.m
     }
 
-    ///
+    /// re-express point p, from self's local frame to global frame
     pub fn action_on_point(&self, p: &OVector<f64, U3>) -> OVector<f64, U3> {
         self.t + &self.r * p
     }

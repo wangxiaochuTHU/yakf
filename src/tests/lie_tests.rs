@@ -1,5 +1,6 @@
 #[cfg(test)]
 mod tests {
+
     use crate::lie::base::{LieAlgebraSE3, LieGroupSE3, LieVectorSE3};
 
     use crate::linalg::{Const, OMatrix, OVector, U2, U3};
@@ -81,5 +82,25 @@ mod tests {
         assert!((&tau_hat_i - &tau_hat_j).norm() < 1e-10);
         assert!((&tau_vec_i.w - &tau_vec_j.w).norm() < 1e-10);
         assert!((&tau_vec_i.v - &tau_vec_j.v).norm() < 1e-10);
+    }
+
+    #[test]
+    fn test_action_point() {
+        let w = OVector::<f64, U3>::new(0.0, 0.0, 0.0);
+        let w = if w.norm() != 0.0 { w / w.norm() } else { w };
+
+        let vec6 = LieVectorSE3 {
+            w: w,
+            v: OVector::<f64, U3>::new(1.0, 2.0, 3.0),
+        };
+
+        let group = LieGroupSE3::from(&vec6);
+
+        let p = OVector::<f64, U3>::new(3.0, 4.0, 5.0);
+
+        let p2 = group.action_on_point(&p);
+        let p2_expect = OVector::<f64, U3>::new(4.0, 6.0, 8.0);
+
+        assert!((&p2 - p2_expect).norm() < 1e-10);
     }
 }
