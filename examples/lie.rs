@@ -19,6 +19,6 @@ fn main() {
     println!("vec1 = {:?}", vec1);
     let group1 = LieGroupSE3::from(vec1);
     println!("group = {:#?}", group1);
-    let vec1_invert = group1.to_algebra();
-    println!("vec1_invert = {:?}", vec1_invert.unwrap());
+    let vec1_invert = group1.to_vec6();
+    println!("vec1_invert = {:?}", vec1_invert);
 }

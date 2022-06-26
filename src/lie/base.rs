@@ -1,6 +1,40 @@
+/// Generators of SE(3) are used as below:
+///
+/// G1 =    |0  0   0   0|
+///         |0  0   -1  0|
+///         |0  1   0   0|
+///         |0  0   0   0|
+///
+/// G2 =    |0  0   1   0|
+///         |0  0   0   0|
+///         |-1 0   0   0|
+///         |0  0   0   0|
+///
+/// G3 =    |0  -1  0   0|
+///         |1  0   0   0|
+///         |0  0   0   0|
+///         |0  0   0   0|
+///
+/// G4 =    |0  0   0   1|
+///         |0  0   0   0|
+///         |0  0   0   0|
+///         |0  0   0   0|
+///
+/// G5 =    |0  0   0   0|
+///         |0  0   0   1|
+///         |0  0   0   0|
+///         |0  0   0   0|
+///
+/// G6 =    |0  0   0   0|
+///         |0  0   0   0|
+///         |0  0   0   1|
+///         |0  0   0   0|
+///      
+use nalgebra::ComplexField;
+
+use crate::alloc::borrow::ToOwned;
 use crate::alloc::vec::Vec;
 use crate::time::{Duration, Epoch};
-use alloc::borrow::ToOwned;
 use core::convert::AsRef;
 use core::convert::From;
 use core::f64::consts::PI;
@@ -11,10 +45,12 @@ use crate::linalg::{DefaultAllocator, DimName, OMatrix, OVector, SMatrix, U3, U4
 
 const SMALL_FLOAT: f64 = 1e-6;
 
+pub type LieAlgebraSE3 = OMatrix<f64, U4, U4>;
+
 /// TODO: retain a best way to store the group.
 /// This struct current is in redundancy.
 /// both `(r,t)` and `m`, can determine the group.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct LieGroupSE3 {
     // rotation matrix
     pub r: OMatrix<f64, U3, U3>,
@@ -37,40 +73,39 @@ impl AsRef<LieVectorSE3> for LieVectorSE3 {
 }
 
 impl LieGroupSE3 {
-    pub fn to_algebra(&self) -> Option<LieVectorSE3> {
-        let op_w = log3(&self.r);
-        match op_w {
-            // θ ≠ π
-            Some(w) => {
-                let theta = (w.dot(&w)).sqrt();
-                let w_hat = hat3(&w);
-                let (a, b) = if theta < SMALL_FLOAT {
-                    let a = 1.0 - theta.powi(2) / 6.0 + theta.powi(4) / 120.0;
-                    let b = 0.5 - theta.powi(2) / 24.0 + theta.powi(4) / 720.0;
-                    (a, b)
-                } else {
-                    let a = theta.sin() / theta;
-                    let b = (1.0 - theta.cos()) / theta.powi(2);
-                    (a, b)
-                };
-                let v_inv = OMatrix::<f64, U3, U3>::identity() - 0.5 * &w_hat
-                    + 1.0 / theta.powi(2) * (1.0 - a / b / 2.0) * w_hat.pow(2);
-                let v = v_inv * self.t;
-                Some(LieVectorSE3 { w: w, v: v })
-            }
+    pub fn to_vec6(&self) -> LieVectorSE3 {
+        let (theta, w) = log3(&self.r);
 
-            //  θ = π
-            None => None,
-        }
+        let w_hat = hat3(&w);
+        let (a, b) = if theta < SMALL_FLOAT {
+            let a = 1.0 - theta.powi(2) / 6.0 + theta.powi(4) / 120.0;
+            let b = 0.5 - theta.powi(2) / 24.0 + theta.powi(4) / 720.0;
+            (a, b)
+        } else {
+            let a = theta.sin() / theta;
+            let b = (1.0 - theta.cos()) / theta.powi(2);
+            (a, b)
+        };
+        let v_inv = OMatrix::<f64, U3, U3>::identity() - 0.5 * &w_hat
+            + 1.0 / theta.powi(2) * (1.0 - a / b / 2.0) * w_hat.pow(2);
+        let v = v_inv * self.t;
+        LieVectorSE3 { w: w, v: v }
+    }
+
+    pub fn inverse(&self) -> Self {
+        let r2 = self.r.transpose();
+        let t2 = -r2 * &self.t;
+        let mut m = OMatrix::<f64, U4, U4>::zeros();
+        m.index_mut((0..3, 0..3)).copy_from(&r2);
+        m.index_mut((0..3, 3)).copy_from(&t2);
+        m[(3, 3)] = 1.0;
+        Self { r: r2, t: t2, m: m }
     }
 
     /// calculate the Adjoint matrix, with the definition of vector column form as [rotation_vec, translation_vec]
     /// [ R      0
     ///  [t]xR   R  ]
     ///
-    /// if the vector column form is defined as [translation_vec, rotation_vec], the Adjoint matrix should be
-    /// [R   [t]xR;
-    /// 0     R ]
     pub fn adjoint_matrix(&self) -> OMatrix<f64, U6, U6> {
         let mut adj = OMatrix::<f64, U6, U6>::zeros();
         adj.index_mut((0..3, 0..3)).copy_from(&self.r);
@@ -81,66 +116,51 @@ impl LieGroupSE3 {
 
         adj
     }
-    pub fn adjoint_action(&self, v: &OMatrix<f64, U4, U4>) -> Option<OMatrix<f64, U4, U4>> {
-        match self.m.try_inverse() {
-            Some(m_inv) => Some(self.m * v * m_inv),
-            None => None,
-        }
+
+    pub fn adjoint_action(&self, v: &LieAlgebraSE3) -> LieAlgebraSE3 {
+        let group_inv = self.inverse();
+
+        self.m * v * group_inv.m
     }
-    pub fn from_hat(m: &OMatrix<f64, U4, U4>) -> Self {
+    pub fn from_algebra(m: &LieAlgebraSE3) -> Self {
         let m = m.exp();
         let (r, t) = get_r_t_from_se3m(&m);
         LieGroupSE3 { r: r, t: t, m: m }
     }
 
-    pub fn to_hat(&self) -> Option<OMatrix<f64, U4, U4>> {
-        match self.to_algebra() {
-            Some(vec6) => Some(hat4(&vec6)),
-            None => None,
-        }
+    pub fn to_algebra(&self) -> LieAlgebraSE3 {
+        let vec6 = self.to_vec6();
+        hat4(&vec6)
     }
 
-    pub fn delta_to_target(&self, end: &Self) -> Option<Self> {
-        let start_inv_op = self.m.try_inverse();
-        match start_inv_op {
-            Some(start_inv) => {
-                let m = end.m * start_inv;
-                let (r, t) = get_r_t_from_se3m(&m);
-                Some(LieGroupSE3 { r: r, t: t, m: m })
-            }
-            None => {
-                // TODO: element in SE3 should always has an inverse.
-                // Does it mean I can unwrap m.try_inverse directly?
-                None
-            }
-        }
+    pub fn delta_to_target(&self, end: &Self) -> Self {
+        let start_inv = self.inverse();
+        let m = end.m * start_inv.m;
+        let (r, t) = get_r_t_from_se3m(&m);
+        LieGroupSE3 { r: r, t: t, m: m }
     }
 
-    pub fn interpolation(&self, end: &Self, nums_inter: usize) -> Option<Vec<Self>> {
-        let delta = self.delta_to_target(end).unwrap(); // TODO: unwrap here can always succeed?
-        if let Some(delta_algebra) = delta.to_hat() {
-            let d = 1.0 / (nums_inter + 1) as f64;
-            let mut intergroups: Vec<Self> = Vec::new();
-            for i in 0..nums_inter {
-                let a = i as f64 * d;
-                let d_delta_algebra = a * delta_algebra;
-                let d_delta = d_delta_algebra.exp();
-                let m = d_delta * &self.m;
-                let (r, t) = get_r_t_from_se3m(&m);
-                intergroups.push(LieGroupSE3 { r: r, t: t, m: m })
-            }
-            Some(intergroups)
-        } else {
-            None
+    pub fn interpolation(&self, end: &Self, nums_inter: usize) -> Vec<Self> {
+        let delta = self.delta_to_target(end);
+        let delta_algebra = delta.to_algebra();
+        let d = 1.0 / (nums_inter + 1) as f64;
+        let mut intergroups: Vec<Self> = Vec::new();
+        for i in 0..nums_inter {
+            let a = i as f64 * d;
+            let d_delta_algebra = a * delta_algebra;
+            let d_delta = d_delta_algebra.exp();
+            let m = d_delta * &self.m;
+            let (r, t) = get_r_t_from_se3m(&m);
+            intergroups.push(LieGroupSE3 { r: r, t: t, m: m })
         }
+        intergroups
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct LieVectorSE3 {
     // w stands for rotation
     pub w: OVector<f64, U3>,
-
     // v stands for translation
     pub v: OVector<f64, U3>,
 }
@@ -165,48 +185,45 @@ impl LieVectorSE3 {
 
         // method 2 to calculate `m`
         let mut m: OMatrix<f64, U4, U4> = OMatrix::<f64, U4, U4>::zeros();
-        for (i, mut row) in m.row_iter_mut().enumerate() {
-            if i < 3 {
-                let x = w_hat.row(i);
-                row.copy_from_slice(&[w_hat[(i, 0)], w_hat[(i, 1)], w_hat[(i, 2)], self.v[i]]);
-            }
-        }
+        m.index_mut((0..3, 0..3)).copy_from(&w_hat);
+        m.index_mut((0..3, 3)).copy_from(&self.v);
+
         let m = m.exp();
 
         LieGroupSE3 { r: r, t: t, m: m }
     }
-    pub fn to_column_vector(&self) -> OVector<f64, U6> {
+    pub fn to_vec6(&self) -> OVector<f64, U6> {
         OVector::<f64, U6>::new(
             self.w[0], self.w[1], self.w[2], self.v[0], self.v[1], self.v[2],
         )
     }
-    pub fn from_column_vector(col: &OVector<f64, U6>) -> Self {
+    pub fn from_vec6(col: &OVector<f64, U6>) -> Self {
         let w = OVector::<f64, U3>::new(col[0], col[1], col[2]);
         let v = OVector::<f64, U3>::new(col[3], col[4], col[5]);
         LieVectorSE3 { w: w, v: v }
     }
 
-    pub fn hat(&self) -> OMatrix<f64, U4, U4> {
+    pub fn to_algebra(&self) -> LieAlgebraSE3 {
         hat4(&self)
     }
 
-    pub fn from_hat(m: &OMatrix<f64, U4, U4>) -> Self {
+    pub fn from_algebra(m: &LieAlgebraSE3) -> Self {
         vee4(m)
     }
 }
 
-// SO3 hat
+/// SO3 hat , vec3 --> algebra R{3×3}
 fn hat3(w: &OVector<f64, U3>) -> OMatrix<f64, U3, U3> {
     OMatrix::<f64, U3, U3>::new(0.0, -w[2], w[1], w[2], 0.0, -w[0], -w[1], w[0], 0.0)
 }
 
-// SO3 vee
+/// SO3 vee,  algebra R{3×3} --> vec3
 fn vee3(m: &OMatrix<f64, U3, U3>) -> OVector<f64, U3> {
     OVector::<f64, U3>::new(m.m32, m.m13, m.m21)
 }
 
-// SE3 hat
-fn hat4(vec6: &LieVectorSE3) -> OMatrix<f64, U4, U4> {
+/// SE3 hat,  vec6  --> algebra R{4×4}
+fn hat4(vec6: &LieVectorSE3) -> LieAlgebraSE3 {
     let mut m = OMatrix::<f64, U4, U4>::zeros();
     let top_left = hat3(&vec6.w);
     let top_right = &vec6.v;
@@ -215,6 +232,7 @@ fn hat4(vec6: &LieVectorSE3) -> OMatrix<f64, U4, U4> {
     m
 }
 
+/// pull blocks `r` and `t` from the matrix-formed Lie group
 fn get_r_t_from_se3m(m: &OMatrix<f64, U4, U4>) -> (OMatrix<f64, U3, U3>, OVector<f64, U3>) {
     let mut r = OMatrix::<f64, U3, U3>::zeros();
     let mut t = OVector::<f64, U3>::zeros();
@@ -223,8 +241,8 @@ fn get_r_t_from_se3m(m: &OMatrix<f64, U4, U4>) -> (OMatrix<f64, U3, U3>, OVector
     (r, t)
 }
 
-// SE3 vee
-fn vee4(m: &OMatrix<f64, U4, U4>) -> LieVectorSE3 {
+/// SE3 vee,  algebra R{4×4} --> vec6
+fn vee4(m: &LieAlgebraSE3) -> LieVectorSE3 {
     let mut top_left = OMatrix::<f64, U3, U3>::zeros();
     let mut top_right = OVector::<f64, U3>::zeros();
     top_left.copy_from(&m.slice((0, 0), (3, 3)));
@@ -233,6 +251,7 @@ fn vee4(m: &OMatrix<f64, U4, U4>) -> LieVectorSE3 {
     LieVectorSE3 { w: w, v: top_right }
 }
 
+/// vec3 --> R{3×3}
 fn exp3(w: &OVector<f64, U3>) -> OMatrix<f64, U3, U3> {
     let theta = (w.dot(w)).sqrt();
     let w_hat = hat3(w);
@@ -247,22 +266,43 @@ fn exp3(w: &OVector<f64, U3>) -> OMatrix<f64, U3, U3> {
     }
 }
 
-fn log3(r: &OMatrix<f64, U3, U3>) -> Option<OVector<f64, U3>> {
-    let theta = ((r.trace() - 1.0) / 2.0).acos();
-    let delta_r = r - r.transpose();
+/// R{3×3} --> vec3
+/// this part takes [https://github.com/petercorke/spatialmath-matlab/blob/master/trlog.m] as a reference
+fn log3(r: &OMatrix<f64, U3, U3>) -> (f64, OVector<f64, U3>) {
+    let trace_r = r.trace();
 
-    if theta.abs() < SMALL_FLOAT {
-        let a = (1.0 - theta.powi(2) / 6.0 + theta.powi(4) / 120.0) / 2.0;
-        let log_r = a * delta_r;
-        let w = vee3(&log_r);
-        Some(w)
-    } else if (theta - PI).abs() < SMALL_FLOAT {
+    if (trace_r - 3.0).abs() < SMALL_FLOAT {
+        // θ = 0
+        let theta = 0.0;
+        let w = OVector::<f64, U3>::zeros();
+        (theta, w)
+    } else if (trace_r + 1.0).abs() < SMALL_FLOAT {
         // θ = π
-        None
+        let diag = r.diagonal();
+
+        let (k, mx) = diag
+            .iter()
+            .enumerate()
+            .max_by(|a, b| a.1.partial_cmp(&b.1).unwrap())
+            .unwrap();
+        let col = r.column(k) + OMatrix::<f64, U3, U3>::identity().column(k);
+        let theta = PI;
+        let w = col / (2.0 * (1.0 + mx)).sqrt();
+        (theta, w)
     } else {
-        let a = theta / 2.0 / theta.sin();
-        let log_r = a * delta_r;
-        let w = vee3(&log_r);
-        Some(w)
+        // general case
+        let theta = ((trace_r - 1.0) / 2.0).acos();
+        let d_r = r - &r.transpose();
+        if theta.abs() < SMALL_FLOAT {
+            let a = (1.0 - theta.powi(2) / 6.0 + theta.powi(4) / 120.0) / 2.0;
+            let log_r = a * d_r;
+            let w = vee3(&log_r);
+            (theta, w)
+        } else {
+            let a = theta / 2.0 / theta.sin();
+            let log_r = a * d_r;
+            let w = vee3(&log_r);
+            (theta, w)
+        }
     }
 }

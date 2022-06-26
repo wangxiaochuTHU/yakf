@@ -7,6 +7,39 @@ use crate::errors::YakfError;
 use crate::linalg::{DMatrix, DVector};
 use crate::time::{Duration, Epoch};
 
+/*
+    If you want to clone the KF, the following trait may help.
+    This is studied from the reference
+[https://stackoverflow.com/questions/65203307/how-do-i-create-a-trait-object-that-implements-fn-and-can-be-cloned-to-distinct]
+
+    after implementing CloneableFn, you should need to modify the signature of DEKF accordingly. e.g.
+    change this line  -->  pub dynamics: Box<dyn Fn(&DVector<f64>, &DVector<f64>, Duration) -> DVector<f64>>,
+                    to-->  pub dynamics: Box<dyn CloneableFn>,
+*/
+
+// trait CloneableFn: Fn(&DVector<f64>, &DVector<f64>, Duration) -> DVector<f64> {
+//     fn clone_box<'a>(&self) -> Box<dyn 'a + CloneableFn>
+//     where
+//         Self: 'a;
+// }
+
+// impl<F: Fn(&DVector<f64>, &DVector<f64>, Duration) -> DVector<f64> + Clone> CloneableFn for F {
+//     fn clone_box<'a>(&self) -> Box<dyn 'a + CloneableFn>
+//     where
+//         Self: 'a,
+//     {
+//         Box::new(self.clone())
+//     }
+// }
+
+// impl<'a> Clone for Box<dyn 'a + CloneableFn> {
+//     fn clone(&self) -> Self {
+//         (**self).clone_box()
+//     }
+// }
+
+// #[derive(Clone)]
+
 pub struct DEKF<S>
 where
     S: DState,
