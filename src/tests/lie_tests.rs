@@ -9,7 +9,7 @@ mod tests {
         time::{Duration, Epoch, Unit},
     };
     #[test]
-    fn test_vec6_to_group() {
+    fn test_vec6_group() {
         let w = OVector::<f64, U3>::new(1.2, 2.5, 3.7);
         let w = w / w.norm();
         let vec6 = LieVectorSE3 {
@@ -26,20 +26,28 @@ mod tests {
     }
 
     #[test]
-    fn test_vec6_hat_group() {
-        let w = OVector::<f64, U3>::new(1.2, 2.5, 3.7);
-        let w = w / w.norm();
-        let vec6 = LieVectorSE3 {
-            w: w,
-            v: OVector::<f64, U3>::new(5.6, 6.7, 7.8),
-        };
-        let hat4 = vec6.to_algebra();
-        let group = LieGroupSE3::from_algebra(&hat4);
-        let hat4_back = group.to_algebra();
-        let vec6_back = LieVectorSE3::from_algebra(&hat4_back);
-        assert!((&vec6_back.w - &vec6.w).norm() < 1e-10);
-        assert!((&vec6_back.v - &vec6.v).norm() < 1e-10);
-        assert!((&hat4_back - hat4).norm() < 1e-10);
+    fn test_vec6_algebra_group() {
+        let ws = [
+            OVector::<f64, U3>::new(1.2, 2.5, 3.7),
+            OVector::<f64, U3>::new(-1.2, -2.5, 3.7),
+            OVector::<f64, U3>::new(1e-8, 1e-8, 1e-8),
+        ];
+
+        for w in ws.into_iter() {
+            let w = OVector::<f64, U3>::new(1.2, 2.5, 3.7);
+            let w = w / w.norm();
+            let vec6 = LieVectorSE3 {
+                w: w,
+                v: OVector::<f64, U3>::new(5.6, 6.7, 7.8),
+            };
+            let hat4 = vec6.to_algebra();
+            let group = LieGroupSE3::from_algebra(&hat4);
+            let hat4_back = group.to_algebra();
+            let vec6_back = LieVectorSE3::from_algebra(&hat4_back);
+            assert!((&vec6_back.w - &vec6.w).norm() < 1e-10);
+            assert!((&vec6_back.v - &vec6.v).norm() < 1e-10);
+            assert!((&hat4_back - hat4).norm() < 1e-10);
+        }
     }
     #[test]
     fn test_adjoint_matrix() {
