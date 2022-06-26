@@ -11,7 +11,7 @@ Lie Theory (Lie group and algebra) on SE(3).
 ## Filter Status
 * UKF ✅ 
 * EKF (Only dynamically-sized version) ✅ 
-* ***TODO: Kalman Filter on Lie Group*** 
+* ***(TODO:) Kalman Filter on Lie Group*** 
 
 ## Sampling Method Status
 * Minimal Skew Simplex Sampling (n+2) ✅
