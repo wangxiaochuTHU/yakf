@@ -1,7 +1,7 @@
 # yakf - Yet Another Kalman Filter
-Yet Another Kalman Filter Implementation. 
+Yet Another Kalman Filter Implementation, as well as, 
 
-As well as Lie Theory (Lie group and algebra) on SE(3).
+Lie Theory (Lie group and algebra) on SE(3).
 
 `[no_std]` is supported by default.
 
