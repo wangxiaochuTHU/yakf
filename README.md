@@ -22,8 +22,8 @@ As well as Lie Theory (Lie group and algebra) on SE(3).
 * For ***dynamically***-sized state whose dimension may vary in run time, refer to `yakf::dfilters`
 
 ## Lie Group Status
-* SE(3) Struct , Adjoint matrix, Adjoint action ✅
-* vector Struct (i.e. the vector, to be strict) ✅
+* SE(3) Lie Group Struct , Adjoint matrix, Adjoint action ✅
+* Lie vector Struct ✅
 * SE(3)  <--> se(3)  ✅
 * se(3)  <--> vector ✅
 * vector <--> SE(3)  ✅
