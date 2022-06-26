@@ -117,22 +117,32 @@ impl LieGroupSE3 {
         adj
     }
 
+    ///  re-express v , from self's local frame to global frame
     pub fn adjoint_action(&self, v: &LieAlgebraSE3) -> LieAlgebraSE3 {
         let group_inv = self.inverse();
 
         self.m * v * group_inv.m
     }
+
+    ///
+    pub fn action_on_point(&self, p: &OVector<f64, U3>) -> OVector<f64, U3> {
+        self.t + &self.r * p
+    }
+
+    /// get the group from a lgebra-formed matrix
     pub fn from_algebra(m: &LieAlgebraSE3) -> Self {
         let m = m.exp();
         let (r, t) = get_r_t_from_se3m(&m);
         LieGroupSE3 { r: r, t: t, m: m }
     }
 
+    /// transform the group to lgebra-formed matrix
     pub fn to_algebra(&self) -> LieAlgebraSE3 {
         let vec6 = self.to_vec6();
         hat4(&vec6)
     }
 
+    /// calculate the delta group, that starts from `self` and ends up at `end`
     pub fn delta_to_target(&self, end: &Self) -> Self {
         let start_inv = self.inverse();
         let m = end.m * start_inv.m;
@@ -140,6 +150,8 @@ impl LieGroupSE3 {
         LieGroupSE3 { r: r, t: t, m: m }
     }
 
+    /// equally interpolation between `start` and `end`.  start----[interpolation]----end
+    /// nums_inter is the number of interpolation objects.
     pub fn interpolation(&self, end: &Self, nums_inter: usize) -> Vec<Self> {
         let delta = self.delta_to_target(end);
         let delta_algebra = delta.to_algebra();
