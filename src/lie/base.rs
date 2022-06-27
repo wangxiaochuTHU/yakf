@@ -29,7 +29,9 @@
 ///         |0  0   0   0|
 ///         |0  0   0   1|
 ///         |0  0   0   0|
-///      
+///
+///  se(3) vector follows the order: [rotation, translation]    
+///
 use nalgebra::ComplexField;
 
 use crate::alloc::borrow::ToOwned;

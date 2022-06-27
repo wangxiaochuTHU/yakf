@@ -11,11 +11,22 @@ where
     DefaultAllocator:
         Allocator<f64, T2> + Allocator<f64, T> + Allocator<f64, T, T2> + Allocator<f64, T, T>,
 {
+    /// weights for covariance
     fn weights_c(&self) -> &OVector<f64, T2>;
+
+    /// weights for state
     fn weights_m(&self) -> &OVector<f64, T2>;
+
+    /// fixed bases for Minimal skew simplex sampling method
     fn bases(&self) -> Option<&OMatrix<f64, T, T2>>;
+
+    /// check if a sampling method has bases
     fn has_bases(&self) -> bool;
-    fn get_k(&self) -> Option<f64>;
+
+    /// Symmetrically Distributed Sampling Method needs to use `λ + N` scalar, so store it.
+    fn get_lamda_plus_n(&self) -> Option<f64>;
+
+    /// sample the states and obtain a serial of samples, form them into a matrix
     fn sampling_states(
         &self,
         p: &OMatrix<f64, T, T>,
@@ -72,7 +83,7 @@ where
     fn has_bases(&self) -> bool {
         true
     }
-    fn get_k(&self) -> Option<f64> {
+    fn get_lamda_plus_n(&self) -> Option<f64> {
         None
     }
     fn sampling_states(
@@ -253,7 +264,7 @@ where
     fn has_bases(&self) -> bool {
         false
     }
-    fn get_k(&self) -> Option<f64> {
+    fn get_lamda_plus_n(&self) -> Option<f64> {
         Some(self.k)
     }
 
@@ -266,7 +277,7 @@ where
             Some(cholesky) => {
                 let cho = cholesky.unpack();
                 let mut samples: OMatrix<f64, T, T2> = OMatrix::<f64, T, T2>::zeros();
-                let sqrt_lamda_plus_n = self.get_k().unwrap().sqrt();
+                let sqrt_lamda_plus_n = self.get_lamda_plus_n().unwrap().sqrt();
                 for (i, mut col) in samples.column_iter_mut().enumerate() {
                     if i == 0 {
                         let chi = state;
