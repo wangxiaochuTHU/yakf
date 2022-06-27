@@ -94,6 +94,23 @@ impl LieGroupSE3 {
         LieVectorSE3 { w: w, v: v }
     }
 
+    pub fn from_r_t(r: OMatrix<f64, U3, U3>, t: OVector<f64, U3>) -> LieGroupSE3 {
+        let mut m: OMatrix<f64, U4, U4> = OMatrix::<f64, U4, U4>::zeros();
+        m.index_mut((0..3, 0..3)).copy_from(&r);
+        m.index_mut((0..3, 3)).copy_from(&t);
+        m[(3, 3)] = 1.0;
+        LieGroupSE3 { r: r, t: t, m: m }
+    }
+    pub fn from_m(m: OMatrix<f64, U4, U4>) -> LieGroupSE3 {
+        let mut r: OMatrix<f64, U3, U3> = OMatrix::<f64, U3, U3>::zeros();
+        let mut t: OVector<f64, U3> = OVector::<f64, U3>::zeros();
+
+        r.copy_from(&m.index((0..3, 0..3)));
+        t.copy_from(&m.index((0..3, 3)));
+
+        LieGroupSE3 { r: r, t: t, m: m }
+    }
+
     pub fn inverse(&self) -> Self {
         let r2 = self.r.transpose();
         let t2 = -r2 * &self.t;
