@@ -103,6 +103,10 @@ impl LieGroupSE3 {
         m[(3, 3)] = 1.0;
         Self { r: r2, t: t2, m: m }
     }
+    pub fn increment_by_left_delta(&mut self, delta: Self) {
+        self.m = delta.m * &self.m;
+        (self.r, self.t) = get_r_t_from_se3m(&self.m);
+    }
 
     /// calculate the Adjoint matrix, with the definition of vector column form as [rotation_vec, translation_vec]
     /// [ R      0
