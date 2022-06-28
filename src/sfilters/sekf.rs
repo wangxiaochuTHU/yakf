@@ -3,26 +3,16 @@ use crate::time::{Duration, Epoch};
 use crate::alloc::{boxed::Box, vec::Vec};
 use crate::lie::base::{LieAlgebraSE3, LieGroupSE3, LieVectorSE3};
 use crate::linalg::allocator::Allocator;
-use crate::linalg::{DefaultAllocator, DimName, OVector};
+use crate::linalg::{DefaultAllocator, DimName, OMatrix, OVector, U3, U4, U6};
 
 pub trait ESStates {
-    /// get the i-th state
-    fn state(&self, i: usize) -> &LieGroupSE3 {
+    /// get the state
+    fn state(&self) -> &LieGroupSE3 {
         unimplemented!()
     }
 
-    /// get all states
-    fn states_all(&self) -> &Vec<LieGroupSE3> {
-        unimplemented!()
-    }
-
-    /// set the i-th state
-    fn set_state(&mut self, i: usize, state: LieGroupSE3) {
-        unimplemented!()
-    }
-
-    /// set all states
-    fn set_states_all(&mut self, states: Vec<LieGroupSE3>) {
+    /// set the state
+    fn set_state(&mut self, state: LieGroupSE3) {
         unimplemented!()
     }
 
@@ -39,11 +29,11 @@ pub trait ESStates {
     /// propagate / predict
     fn propagate(
         &mut self,
-        dynamics: &dyn Fn(&Vec<LieGroupSE3>, &LieVectorSE3, Duration) -> Vec<LieGroupSE3>,
+        dynamics: &dyn Fn(&LieGroupSE3, &LieVectorSE3, Duration) -> LieGroupSE3,
         dt: Duration,
         external: LieVectorSE3,
     ) {
-        self.set_states_all(dynamics(&self.states_all(), &external, dt));
+        self.set_state(dynamics(&self.state(), &external, dt));
         self.set_epoch(self.epoch() + dt);
     }
 }
@@ -53,4 +43,9 @@ where
     S: ESStates,
 {
     stamp_state: S,
+    pmatrix: OMatrix<f64, U6, U6>,
+    qmatrix: OMatrix<f64, U6, U6>,
+    nmatrix: OMatrix<f64, U3, U3>,
+    f: Box<dyn Fn(&LieGroupSE3, &LieVectorSE3, Duration) -> OMatrix<f64, U6, U6>>,
+    g: Box<dyn Fn(&LieGroupSE3, &LieVectorSE3, Duration) -> OMatrix<f64, U6, U6>>,
 }
