@@ -110,6 +110,11 @@ impl LieGroupSE3 {
 
         LieGroupSE3 { r: r, t: t, m: m }
     }
+    pub fn zeros() -> LieGroupSE3 {
+        let r = OMatrix::<f64, U3, U3>::identity();
+        let t = OVector::<f64, U3>::zeros();
+        Self::from_r_t(r, t)
+    }
 
     pub fn inverse(&self) -> Self {
         let r2 = self.r.transpose();
@@ -258,7 +263,7 @@ impl LieVectorSE3 {
 }
 
 /// SO3 hat , vec3 --> algebra R{3×3}
-fn hat3(w: &OVector<f64, U3>) -> OMatrix<f64, U3, U3> {
+pub fn hat3(w: &OVector<f64, U3>) -> OMatrix<f64, U3, U3> {
     OMatrix::<f64, U3, U3>::new(0.0, -w[2], w[1], w[2], 0.0, -w[0], -w[1], w[0], 0.0)
 }
 
