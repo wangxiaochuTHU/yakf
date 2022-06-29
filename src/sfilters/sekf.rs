@@ -148,6 +148,7 @@ where
                 x_predict.increment_by_left_delta(dx_group);
                 self.stamp_state.set_state(x_predict);
                 self.stamp_state.set_epoch(m_epoch);
+                self.pmatrix = &self.pmatrix - &kmatrix * &zmatrix * &kmatrix.transpose();
 
                 Ok(())
             }

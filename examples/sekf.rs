@@ -80,7 +80,21 @@ fn main() {
 
     let h = |x: &LieGroupSE3| {
         let mut m = OMatrix::<f64, Const<12>, U6>::zeros();
-        let adx = x.adjoint_matrix();
+
+        // for k in 0..beacons.len() {
+        //     let p = beacons[k];
+        //     let mut mm = OMatrix::<f64, U3, U6>::zeros();
+        //     let p_hat = hat3(&p);
+        //     let r = x.r;
+        //     let t = x.t;
+        //     let xx = r.transpose() * hat3(&OVector::<f64, U3>::from_element(1.0)) * (p - t);
+        //     mm.index_mut((0..3, 0..3)).copy_from(&());
+
+        //     mm.index_mut((0..3, 3..6))
+        //         .copy_from(&(-OMatrix::<f64, U3, U3>::identity()));
+        // }
+
+        let adx = x.adjoint_matrix().try_inverse().unwrap();
 
         for k in 0..beacons.len() {
             let p = beacons[k];
@@ -166,12 +180,12 @@ fn main() {
         let mut error = true_pose.inverse();
         error.increment_by_left_delta(plane_estimate.clone());
 
-        // println!(
-        //     "plane_estimate - plane_true = {:?}",
-        //     error.to_vec6().to_vec6().norm(),
-        // );
-        println!("plane_estimate.r = {:?}", eskf.stamp_state.state().r,);
-        println!("plane_estimate.t = {:?}", eskf.stamp_state.state().t,);
+        println!(
+            "plane_estimate - plane_true = {:?}",
+            error.to_vec6().to_vec6().norm(),
+        );
+        // println!("plane_estimate.r = {:?}", eskf.stamp_state.state().r,);
+        // println!("plane_estimate.t = {:?}", eskf.stamp_state.state().t,);
     }
 
     // println!(
