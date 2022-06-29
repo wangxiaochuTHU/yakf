@@ -190,6 +190,16 @@ impl LieGroupSE3 {
         }
         intergroups
     }
+    pub fn left_jac_at_vec(&self) -> OMatrix<f64, U6, U6> {
+        let mut m: OMatrix<f64, U6, U6> = OMatrix::<f64, U6, U6>::zeros();
+        let vec6 = self.to_vec6();
+        let j = jlso3(&vec6.w);
+        let q = jlq(&vec6);
+        m.index_mut((0..3, 0..3)).copy_from(&j);
+        m.index_mut((3..6, 0..3)).copy_from(&q);
+        m.index_mut((3..6, 3..6)).copy_from(&j);
+        m
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -340,4 +350,42 @@ fn log3(r: &OMatrix<f64, U3, U3>) -> (f64, OVector<f64, U3>) {
             (theta, w)
         }
     }
+}
+
+fn jlso3(w: &OVector<f64, U3>) -> OMatrix<f64, U3, U3> {
+    let theta = (w.dot(w)).sqrt();
+    let w_hat = hat3(w);
+    let (a, b) = if theta < SMALL_FLOAT {
+        let a = 0.5 - theta.powi(2) / 24.0;
+        let b = 1.0 / 6.0 - theta.powi(2) / 120.0;
+        (a, b)
+    } else {
+        let a = (1.0 - theta.cos()) / theta.powi(2);
+        let b = (theta - theta.sin()) / theta.powi(3);
+        (a, b)
+    };
+    OMatrix::<f64, U3, U3>::identity() + a * &w_hat + b * w_hat.pow(2)
+}
+
+fn jlq(vec6: &LieVectorSE3) -> OMatrix<f64, U3, U3> {
+    let theta = (vec6.w.dot(&vec6.w)).sqrt();
+    let w_hat = hat3(&vec6.w);
+    let v_hat = hat3(&vec6.v);
+    let a = 0.5;
+    let ma = v_hat;
+    let mb = &w_hat * &v_hat + &v_hat * &w_hat + &w_hat * &v_hat * &w_hat;
+    let mc = &w_hat.pow(2) * &v_hat + &v_hat * &w_hat.pow(2) - 3.0 * &w_hat * &v_hat * &w_hat;
+    let md = &w_hat * &v_hat * &w_hat.pow(2) + &w_hat.pow(2) * &v_hat * &w_hat;
+    let (b, c, d) = if theta < SMALL_FLOAT {
+        let b = 1.0 / 6.0 - theta.powi(2) / 120.0;
+        let c = -1.0 / 24.0 + theta.powi(2) / 720.0;
+        let d = 0.5 * (c - 3.0 * (-1.0 / 120.0 + theta.powi(2) / 5040.0));
+        (b, c, d)
+    } else {
+        let b = (theta - theta.sin()) / theta.powi(3);
+        let c = (1.0 - theta.powi(2) / 2.0 - theta.cos()) / theta.powi(4);
+        let d = 0.5 * (c - 3.0 * (theta - theta.sin() - theta.powi(3) / 6.0) / theta.powi(5));
+        (b, c, d)
+    };
+    a * ma + b * mb + c * mc + d * md
 }
