@@ -155,7 +155,7 @@ fn main() {
         (x, u_i, u_b)
     };
 
-    let nums_measure = 500_usize;
+    let nums_measure = 2000_usize;
     let dt = Duration::from_f64(10.0, Unit::Millisecond);
     for i in 0..nums_measure {
         let m_epoch = t_base + dt * i as f64;

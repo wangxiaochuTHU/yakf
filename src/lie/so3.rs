@@ -1,0 +1,167 @@
+/// Generators of SO(3) are used as below:
+///
+/// E1 =    |0  0   0 |
+///         |0  0   -1|
+///         |0  1   0 |
+///
+/// E2 =    |0  0   1 |
+///         |0  0   0 |
+///         |-1 0   0 |
+///
+/// E3 =    |0  -1  0 |
+///         |1  0   0 |
+///         |0  0   0 |
+///
+
+///
+use nalgebra::ComplexField;
+
+use crate::alloc::borrow::ToOwned;
+use crate::alloc::vec::Vec;
+use crate::time::{Duration, Epoch};
+use core::convert::AsRef;
+use core::convert::From;
+use core::f64::consts::PI;
+
+use crate::errors::YakfError;
+use crate::linalg::allocator::Allocator;
+use crate::linalg::{DefaultAllocator, DimName, OMatrix, OVector, SMatrix, U3, U4, U6};
+
+const SMALL_FLOAT: f64 = 1e-7;
+
+pub type Alg3 = OMatrix<f64, U3, U3>;
+pub type Grp3 = OMatrix<f64, U3, U3>;
+pub type Vec3 = OVector<f64, U3>;
+
+#[derive(Debug, Clone, Copy)]
+pub enum SO3 {
+    Grp(Grp3),
+    Alg(Alg3),
+    Vec(Vec3),
+}
+impl SO3 {
+    pub fn from_grp(grp: Grp3) -> Self {
+        Self::Grp(grp)
+    }
+    pub fn from_alg(alg: Alg3) -> Self {
+        Self::Alg(alg)
+    }
+    pub fn from_vec(vec: Vec3) -> Self {
+        Self::Vec(vec)
+    }
+}
+
+pub fn hat(w: Vec3) -> Alg3 {
+    Alg3::new(0.0, -w[2], w[1], w[2], 0.0, -w[0], -w[1], w[0], 0.0)
+}
+pub fn vee(alg: Alg3) -> Vec3 {
+    Vec3::new(alg.m32, alg.m13, alg.m21)
+}
+
+pub fn exp(alg: Alg3) -> Grp3 {
+    let θ_vec = Vec3::new(alg.m32, alg.m13, alg.m21);
+
+    let θ = (θ_vec.dot(&θ_vec)).sqrt();
+    let (a, b) = if θ < SMALL_FLOAT {
+        let a = 1.0 - θ.powi(2) / 6.0 + θ.powi(4) / 120.0;
+        let b = 0.5 - θ.powi(2) / 24.0 + θ.powi(4) / 720.0;
+        (a, b)
+    } else {
+        let a = θ.sin() / θ;
+        let b = (1.0 - θ.cos()) / θ.powi(2);
+        (a, b)
+    };
+    Grp3::identity() + a * &alg + b * &alg.pow(2)
+}
+
+pub fn log(grp: Grp3) -> Alg3 {
+    let trace = grp.trace();
+    if (trace - 3.0).abs() < SMALL_FLOAT {
+        // θ = 0
+        let θ = 0.0;
+        let w = OVector::<f64, U3>::zeros();
+        Alg3::zeros()
+    } else if (trace + 1.0).abs() < SMALL_FLOAT {
+        // θ = π
+        let θ = PI;
+        let diag = grp.diagonal();
+
+        let (k, mx) = diag
+            .iter()
+            .enumerate()
+            .max_by(|a, b| a.1.partial_cmp(&b.1).unwrap())
+            .unwrap();
+        let v = grp.column(k) + Grp3::identity().column(k);
+        let u = v / (2.0 * (1.0 + mx)).sqrt();
+        let θ_vec = θ * u;
+        let θ_alg = hat(θ_vec);
+        θ_alg
+    } else {
+        // general case
+        let θ = ((trace - 1.0) / 2.0).acos();
+        let d_r = grp - &grp.transpose();
+        let a = θ / 2.0 / θ.sin();
+        let θ_alg = a * d_r;
+        θ_alg
+    }
+}
+
+// pub trait One2OneMap {
+//     fn to_grp(x: Self) -> Self;
+//     fn to_alg(x: Self) -> Self;
+//     fn to_vec(x: Self) -> Self;
+// }
+
+// impl One2OneMap for SO3 {
+//     fn to_alg(x: Self) -> Self {
+//         match x {
+//             Self::Alg(alg) => Self::Alg(alg),
+//             Self::Grp(grp) => Self::Alg(log(grp)),
+//             Self::Vec(vec) => Self::Alg(hat(vec)),
+//         }
+//     }
+//     fn to_grp(x: Self) -> Self {
+//         match x {
+//             Self::Alg(alg) => Self::Grp(exp(alg)),
+//             Self::Grp(grp) => Self::Grp(grp),
+//             Self::Vec(vec) => Self::Grp(exp(hat(vec))),
+//         }
+//     }
+//     fn to_vec(x: Self) -> Self {
+//         match x {
+//             Self::Alg(alg) => Self::Vec(vee(alg)),
+//             Self::Grp(grp) => Self::Vec(vee(log(grp))),
+//             Self::Vec(vec) => Self::Vec(vec),
+//         }
+//     }
+// }
+
+pub trait One2OneMap {
+    fn to_grp(self) -> Grp3;
+    fn to_alg(self) -> Alg3;
+    fn to_vec(self) -> Vec3;
+}
+
+impl One2OneMap for SO3 {
+    fn to_alg(self) -> Alg3 {
+        match self {
+            Self::Alg(alg) => alg,
+            Self::Grp(grp) => log(grp),
+            Self::Vec(vec) => hat(vec),
+        }
+    }
+    fn to_grp(self) -> Grp3 {
+        match self {
+            Self::Alg(alg) => exp(alg),
+            Self::Grp(grp) => grp,
+            Self::Vec(vec) => exp(hat(vec)),
+        }
+    }
+    fn to_vec(self) -> Vec3 {
+        match self {
+            Self::Alg(alg) => vee(alg),
+            Self::Grp(grp) => vee(log(grp)),
+            Self::Vec(vec) => vec,
+        }
+    }
+}

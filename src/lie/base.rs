@@ -338,7 +338,7 @@ fn log3(r: &OMatrix<f64, U3, U3>) -> (f64, OVector<f64, U3>) {
         let col = r.column(k) + OMatrix::<f64, U3, U3>::identity().column(k);
         let theta = PI;
         let w = col / (2.0 * (1.0 + mx)).sqrt();
-        (theta, w)
+        (theta, theta * w)
     } else {
         // general case
         let theta = ((trace_r - 1.0) / 2.0).acos();

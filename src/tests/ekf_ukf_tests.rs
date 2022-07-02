@@ -46,13 +46,13 @@ mod tests {
         let dynamics = |x: &OVector<f64, U2>, _ext: &OVector<f64, Const<1>>, dt: Duration| {
             OVector::<f64, U2>::new(x[0] + x[1] * dt.in_seconds(), x[1])
         };
-        libc_println!("bike state =  {:?}", bike);
+        // libc_println!("bike state =  {:?}", bike);
         let _ = bike.propagate(
             &dynamics,
             Duration::from_f64(1.0, Unit::Second),
             OVector::<f64, Const<1>>::zeros(),
         );
-        libc_println!("bike state =  {:?}", bike);
+        // libc_println!("bike state =  {:?}", bike);
     }
 
     /*
@@ -135,9 +135,9 @@ mod tests {
         let sampling: MinimalSkewSimplexSampling<Const<6>, Const<8>> =
             MinimalSkewSimplexSampling::build(0.6).unwrap();
 
-        libc_println!("weights = {:?}", sampling.weights);
+        // libc_println!("weights = {:?}", sampling.weights);
         let sum_w = sampling.weights.sum();
-        libc_println!("sum_w = {:?}", sum_w);
+        // libc_println!("sum_w = {:?}", sum_w);
         assert!((sum_w - 1.0).abs() < 1e-11);
 
         let weighted_sum_u = sampling
@@ -147,7 +147,7 @@ mod tests {
             .fold(OVector::<f64, Const<6>>::zeros(), |acc, (w, u)| {
                 acc + *w * u
             });
-        libc_println!("weighted_sum_u = {:#?}", weighted_sum_u);
+        // libc_println!("weighted_sum_u = {:#?}", weighted_sum_u);
         assert!(weighted_sum_u.norm() < 1e-11);
     }
     #[test]
@@ -222,11 +222,11 @@ mod tests {
             OMatrix::<f64, U2, U2>::from_diagonal_element(1.0),
             OMatrix::<f64, U2, U2>::from_diagonal(&OVector::<f64, U2>::new(1.0, 0.001)),
         );
-        libc_println!(
-            "bike actual = {:?}, ukf estimate = {:?}",
-            &bike_actual,
-            &ukf.current_estimate()
-        );
+        // libc_println!(
+        //     "bike actual = {:?}, ukf estimate = {:?}",
+        //     &bike_actual,
+        //     &ukf.current_estimate()
+        // );
 
         let ukf_base_epoch = ukf.current_estimate().epoch();
         let nums_measure = 500_usize;
@@ -253,8 +253,8 @@ mod tests {
             .fold(0.0, |acc, x| acc + x / nums as f64);
 
         assert!(error_metric < noise_metric);
-        libc_println!("error_metric = {:?}", error_metric);
-        libc_println!("noise_metric = {:?}", noise_metric);
+        // libc_println!("error_metric = {:?}", error_metric);
+        // libc_println!("noise_metric = {:?}", noise_metric);
     }
 
     #[test]
@@ -263,6 +263,6 @@ mod tests {
         use crate::dfilters::dstate::test;
         use libc_print::libc_println;
         let m = test();
-        libc_println!("m = {:?}", m);
+        // libc_println!("m = {:?}", m);
     }
 }
