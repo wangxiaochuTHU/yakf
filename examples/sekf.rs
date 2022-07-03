@@ -144,8 +144,7 @@ fn main() {
         let e1 = OVector::<f64, U3>::new(theta.cos(), theta.sin(), 0.0);
         let e2 = OVector::<f64, U3>::new((theta + PI / 2.0).cos(), (theta + PI / 2.0).sin(), 0.0);
         let e3 = OVector::<f64, U3>::new(0.0, 0.0, 1.0);
-        let r_inv = OMatrix::<f64, U3, U3>::from_columns(&[e1, e2, e3]);
-        let r = r_inv.transpose();
+        let r = OMatrix::<f64, U3, U3>::from_columns(&[e1, e2, e3]);
         let x = LieGroupSE3::from_r_t(r, t);
         let w = OVector::<f64, U3>::new(0.0, 0.0, omega);
         let v_b = OVector::<f64, U3>::new(0.0, ro * omega, 0.0);
