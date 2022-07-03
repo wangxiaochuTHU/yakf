@@ -98,12 +98,30 @@ pub fn log(grp: Grp3) -> Alg3 {
         θ_alg
     } else {
         // general case
-        let θ = ((trace - 1.0) / 2.0).acos();
         let d_r = grp - &grp.transpose();
+        let θ = ((trace - 1.0) / 2.0).acos();
         let a = θ / 2.0 / θ.sin();
-        let θ_alg = a * d_r;
+        let mut θ_alg = a * d_r;
+        if (exp(θ_alg) - grp).norm() >= SMALL_FLOAT {
+            θ_alg = -θ_alg;
+        }
         θ_alg
     }
+}
+
+pub fn jac_r(θ_vec: Vec3) -> Alg3 {
+    let θ = (θ_vec.dot(&θ_vec)).sqrt();
+    let θ_alg = hat(θ_vec);
+    let (a, b) = if θ < SMALL_FLOAT {
+        let a = -0.5 + θ.powi(2) / 24.0 - θ.powi(4) / 720.0;
+        let b = 1.0 / 6.0 - θ.powi(2) / 120.0 + θ.powi(4) / 5040.0;
+        (a, b)
+    } else {
+        let a = (θ.cos() - 1.0) / θ.powi(2);
+        let b = (θ - θ.sin()) / θ.powi(3);
+        (a, b)
+    };
+    Alg3::identity() + a * θ_alg + b * θ_alg.pow(2)
 }
 
 // pub trait One2OneMap {
@@ -163,5 +181,29 @@ impl One2OneMap for SO3 {
             Self::Grp(grp) => vee(log(grp)),
             Self::Vec(vec) => vec,
         }
+    }
+}
+
+impl SO3 {
+    pub fn inverse(&self) -> Self {
+        let r_inv = self.to_grp().transpose();
+        Self::from_grp(r_inv)
+    }
+    pub fn adj(&self) -> Grp3 {
+        self.to_grp()
+    }
+    pub fn act_v(&self, x: Vec3) -> Vec3 {
+        self.to_grp() * x
+    }
+    pub fn act_g(&self, x: Self) -> Self {
+        Self::from_grp(self.to_grp() * x.to_grp())
+    }
+    pub fn plus_r(&self, x: Vec3) -> Self {
+        let so2 = SO3::from_vec(x);
+        self.act_g(so2)
+    }
+    pub fn minus_r(&self, x: Self) -> Vec3 {
+        let dso = x.inverse().act_g(*self);
+        dso.to_vec()
     }
 }

@@ -352,7 +352,11 @@ fn log3(r: &OMatrix<f64, U3, U3>) -> (f64, OVector<f64, U3>) {
             let a = theta / 2.0 / theta.sin();
             let log_r = a * d_r;
             let w = vee3(&log_r);
-            (theta, w)
+            if (exp3(&w) - r).norm() < SMALL_FLOAT {
+                (theta, w)
+            } else {
+                (-theta, -w)
+            }
         }
     }
 }
