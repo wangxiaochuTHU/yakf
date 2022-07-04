@@ -167,7 +167,7 @@ fn main() {
         };
 
         // every time the measurement is ready, ekf is trigger to update.
-        eskf.feed_and_update(meas_ob, m_epoch, true_u_i).unwrap();
+        eskf.feed_and_update(meas_ob, m_epoch, true_u_b).unwrap();
 
         // if i > nums_measure / 3 {
         //     actual_normed_noise.push((&meas - bike_actual.state()).norm());

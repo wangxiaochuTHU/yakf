@@ -207,3 +207,130 @@ impl SO3 {
         dso.to_vec()
     }
 }
+
+pub mod sosekf {
+    use crate::time::{Duration, Epoch};
+
+    use super::{hat, jac_r, Alg3, Grp3, One2OneMap, Vec3, SO3};
+    use crate::alloc::{boxed::Box, vec::Vec};
+    use crate::errors::YakfError;
+    use crate::lie::base::{LieAlgebraSE3, LieGroupSE3, LieVectorSE3};
+    use crate::linalg::allocator::Allocator;
+    use crate::linalg::{Const, DefaultAllocator, DimName, OMatrix, OVector, U3, U4, U6};
+    pub struct SOEKF {
+        pub state: SO3,
+        pmatrix: OMatrix<f64, U3, U3>,
+        qmatrix: OMatrix<f64, U3, U3>,
+        nmatrix: OMatrix<f64, Const<12>, Const<12>>,
+    }
+    impl SOEKF {
+        #[allow(dead_code)]
+        /// function that returns a UKF
+        pub fn build(
+            state: SO3,
+            pmatrix: OMatrix<f64, U3, U3>,
+            qmatrix: OMatrix<f64, U3, U3>,
+            nmatrix: OMatrix<f64, Const<12>, Const<12>>,
+        ) -> Self {
+            Self {
+                state,
+                pmatrix,
+                qmatrix,
+                nmatrix,
+            }
+        }
+
+        pub fn transition_f(&self, &u: &Vec3, dt: Duration) -> Grp3 {
+            let v = u * dt.in_seconds();
+            let so = SO3::from_vec(v);
+            let x = so.inverse().adj();
+            x
+        }
+
+        pub fn transition_g(&self, u: &Vec3, dt: Duration) -> OMatrix<f64, U3, U3> {
+            let v = u * dt.in_seconds();
+            jac_r(v)
+        }
+
+        pub fn transition_h(&self, x_predict: &SO3, bk: &[Vec3; 4]) -> OMatrix<f64, Const<12>, U3> {
+            let mut m = OMatrix::<f64, Const<12>, U3>::zeros();
+            for i in 0..4 {
+                let r = x_predict.to_grp();
+                let r_t = r.transpose();
+                let left = -r_t * hat(bk[i]);
+                let right = -r;
+                let block = left * right;
+                m.index_mut((i * 3..i * 3 + 3, 0..3)).copy_from(&block);
+            }
+            m
+        }
+
+        pub fn propagate(&self, u: &Vec3, dt: Duration) -> SO3 {
+            let v = u * dt.in_seconds();
+            let y = self.state.plus_r(v);
+            y
+        }
+        pub fn measure(&self, x_predict: &SO3, bk: &[Vec3; 4]) -> OVector<f64, Const<12>> {
+            let mut ob = OVector::<f64, Const<12>>::zeros();
+            let x_inv = x_predict.inverse();
+            for i in 0..4 {
+                let block = x_inv.act_v(bk[i]);
+                ob.index_mut((i * 3..i * 3 + 3, 0..1)).copy_from(&block);
+            }
+            ob
+        }
+
+        #[allow(dead_code)]
+        pub fn feed_and_update(
+            &mut self,
+            measure: OVector<f64, Const<12>>,
+            dt: Duration,
+            u: Vec3,
+            bk: &[Vec3; 4],
+        ) -> Result<(), YakfError> {
+            let mut x_predict = self.propagate(&u, dt);
+
+            let f = self.transition_f(&u, dt);
+            let g = self.transition_g(&u, dt);
+
+            let p_predict = f * &self.pmatrix * &f.transpose() + g * &self.qmatrix * &g.transpose();
+
+            let ob_predict = self.measure(&x_predict, bk);
+
+            let z = measure - ob_predict;
+
+            let h = self.transition_h(&x_predict, bk);
+
+            let zmatrix = h * p_predict * h.transpose() + self.nmatrix;
+
+            match zmatrix.try_inverse() {
+                Some(zm_inv) => {
+                    let kmatrix = p_predict * h.transpose() * zm_inv;
+                    let dx = kmatrix * z;
+                    self.state = x_predict.plus_r(dx);
+                    self.pmatrix = &self.pmatrix - &kmatrix * &zmatrix * &kmatrix.transpose();
+
+                    Ok(())
+                }
+                None => Err(YakfError::InverseErr),
+            }
+            // let k = p_predict*h.transpose()*
+            // let g_x = self.transition_f(&x_predict, dt);
+            // let p_predict = &g_x * &self.prev_p * g_x.transpose() + &self.process_q;
+
+            // let h_x = self.transition_h(&x_predict);
+            // match (&h_x * &p_predict * &h_x.transpose() + &self.process_r).try_inverse() {
+            //     Some(inv) => {
+            //         let k = &p_predict * h_x.transpose() * inv;
+            //         let new_estimate = x_predict + &k * (measure - z_predict);
+            //         self.prev_x.set_state(new_estimate);
+            //         self.prev_x.set_epoch(m_epoch);
+            //         let sub = dmatrix_identity(self.n, self.n) - &k * h_x;
+            //         self.prev_p = &sub * &p_predict * &sub.transpose() + &self.process_r;
+            //         Ok(())
+            //     }
+            //     None => Err(YakfError::InverseErr),
+            // }
+        }
+    }
+}
