@@ -27,7 +27,7 @@ use crate::errors::YakfError;
 use crate::linalg::allocator::Allocator;
 use crate::linalg::{DefaultAllocator, DimName, OMatrix, OVector, SMatrix, U3, U4, U6};
 
-const SMALL_FLOAT: f64 = 1e-7;
+pub const SMALL_FLOAT: f64 = 1e-7;
 
 pub type Alg3 = OMatrix<f64, U3, U3>;
 pub type Grp3 = OMatrix<f64, U3, U3>;
