@@ -10,7 +10,7 @@ Lie Theory (Lie group, algebra, vector) on SO(3) and SE(3).
 ## Filter Status
 * UKF ✅ 
 * EKF (Only dynamically-sized version) ✅ 
-* ***(unfinished, non-generic) Kalman Filter on SO(3)*** ✅ refer to `yakf::lie::so3::sosekf::SOEKF`
+* ***(unfinished, non-generic) Kalman Filter on SO(3)*** ✅ see `yakf::lie::so3::sosekf::SOEKF` for instance
 
 ## Sampling Method Status
 * Minimal Skew Simplex Sampling (n+2) ✅
@@ -21,8 +21,8 @@ Lie Theory (Lie group, algebra, vector) on SO(3) and SE(3).
 * For ***dynamically***-sized state whose dimension may vary in run time, refer to `yakf::dfilters`
 
 ## Lie Group Status
-* SO(3) ✅
-* SE(3) ✅
+* SO(3) ✅, refer to `yakf::lie::so3`
+* SE(3) ✅, refer to `yakf::lie::se3`
 
 
 ***NOTE that some functions havn't been thoroughly tested, so please let me know if there is any error.***
