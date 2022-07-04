@@ -214,7 +214,7 @@ pub mod sosekf {
     use super::{hat, jac_r, Alg3, Grp3, One2OneMap, Vec3, SO3};
     use crate::alloc::{boxed::Box, vec::Vec};
     use crate::errors::YakfError;
-    use crate::lie::base::{LieAlgebraSE3, LieGroupSE3, LieVectorSE3};
+
     use crate::linalg::allocator::Allocator;
     use crate::linalg::{Const, DefaultAllocator, DimName, OMatrix, OVector, U3, U4, U6};
     pub struct SOEKF {

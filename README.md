@@ -1,17 +1,16 @@
 # yakf - Yet Another Kalman Filter
 Yet Another Kalman Filter Implementation, as well as, 
 
-Lie Theory (Lie group and algebra) on SE(3).
+Lie Theory (Lie group, algebra, vector) on SO(3) and SE(3).
 
 `[no_std]` is supported by default.
-
 
 # Current implementation status
 
 ## Filter Status
 * UKF ✅ 
 * EKF (Only dynamically-sized version) ✅ 
-* ***(TODO:) Kalman Filter on Lie Group*** 
+* ***(unfinished, non-generic) Kalman Filter on SO(3)*** ✅ refer to `yakf::lie::so3::sosekf::SOEKF`
 
 ## Sampling Method Status
 * Minimal Skew Simplex Sampling (n+2) ✅
@@ -22,11 +21,8 @@ Lie Theory (Lie group and algebra) on SE(3).
 * For ***dynamically***-sized state whose dimension may vary in run time, refer to `yakf::dfilters`
 
 ## Lie Group Status
-* SE(3) Lie Group Struct , Adjoint matrix, Adjoint action ✅
-* Lie vector Struct ✅
-* SE(3)  <--> se(3)  ✅
-* se(3)  <--> vector ✅
-* vector <--> SE(3)  ✅
+* SO(3) ✅
+* SE(3) ✅
 
 
 ***NOTE that some functions havn't been thoroughly tested, so please let me know if there is any error.***
