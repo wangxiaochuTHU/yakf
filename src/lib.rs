@@ -22,6 +22,7 @@ pub mod kf {
     pub use super::dfilters::{dekf::*, dsigma_points::*, dstate::*, dukf::*};
     pub use super::errors::YakfError;
     pub use super::filters::{sigma_points::*, state::*, ukf::*};
+    pub use super::lie;
     pub use super::lie::se3::{self, Alg6, Grp6, One2OneMapSE, Vec6};
     pub use super::lie::so3::{self, sosekf::SOEKF, Alg3, Grp3, One2OneMap, Vec3};
 }

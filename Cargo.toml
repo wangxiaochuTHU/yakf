@@ -20,8 +20,8 @@ version = "0.1.10"
 hifitime = "3.2.0"
 itertools = "0.10.3"
 log = "0.4"
-nalgebra = {git = "https://github.com/dimforge/nalgebra", features = ["default"]}
-# nalgebra = {version = "0.30.0"}
+# nalgebra = {git = "https://github.com/dimforge/nalgebra", features = ["default"]}
+nalgebra = {version = "0.31"}
 
 [dev-dependencies]
 libc-print = "0.1.19"
