@@ -109,7 +109,7 @@ pub fn log(grp: Grp3) -> Alg3 {
     }
 }
 
-pub fn jac_r(θ_vec: Vec3) -> Alg3 {
+pub fn jac_r(θ_vec: Vec3) -> OMatrix<f64, U3, U3> {
     let θ = (θ_vec.dot(&θ_vec)).sqrt();
     let θ_alg = hat(θ_vec);
     let (a, b) = if θ < SMALL_FLOAT {
@@ -121,7 +121,7 @@ pub fn jac_r(θ_vec: Vec3) -> Alg3 {
         let b = (θ - θ.sin()) / θ.powi(3);
         (a, b)
     };
-    Alg3::identity() + a * θ_alg + b * θ_alg.pow(2)
+    OMatrix::<f64, U3, U3>::identity() + a * θ_alg + b * θ_alg.pow(2)
 }
 
 // pub trait One2OneMap {
