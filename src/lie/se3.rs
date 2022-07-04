@@ -1,5 +1,6 @@
 use super::so3::{
-    exp as exp3, hat as hat3, log as log3, vee as vee3, Alg3, Grp3, Vec3, SMALL_FLOAT, SO3,
+    exp as exp3, hat as hat3, jac_r as jac3_r, log as log3, vee as vee3, Alg3, Grp3, Vec3,
+    SMALL_FLOAT, SO3,
 };
 /// Generators of SE(3) are used as below:
 ///
@@ -149,4 +150,125 @@ pub fn log(grp: Grp6) -> Alg6 {
     τ_alg.index_mut((0..3, 3)).copy_from(&ρ);
 
     τ_alg
+}
+
+/// TODO: CHECK AGAIN
+fn jlq(ρ: Vec3, θ_vec: Vec3) -> OMatrix<f64, U3, U3> {
+    let θ = (θ_vec.dot(&θ_vec)).sqrt();
+    let θ_alg = hat3(θ_vec);
+    let ρ_alg = hat3(ρ);
+    let a = 0.5;
+    let ma = ρ_alg;
+    let mb = &θ_alg * &ρ_alg + &ρ_alg * &θ_alg + &θ_alg * &ρ_alg * &θ_alg;
+    let mc = &θ_alg.pow(2) * &ρ_alg + &ρ_alg * &θ_alg.pow(2) - 3.0 * &θ_alg * &ρ_alg * &θ_alg;
+    let md = &θ_alg * &ρ_alg * &θ_alg.pow(2) + &θ_alg.pow(2) * &ρ_alg * &θ_alg;
+    let (b, c, d) = if θ < SMALL_FLOAT {
+        let b = 1.0 / 6.0 - θ.powi(2) / 120.0;
+        let c = -1.0 / 24.0 + θ.powi(2) / 720.0;
+        let d = 0.5 * (c - 3.0 * (-1.0 / 120.0 + θ.powi(2) / 5040.0));
+        (b, c, d)
+    } else {
+        let b = (θ - θ.sin()) / θ.powi(3);
+        let c = (1.0 - θ.powi(2) / 2.0 - θ.cos()) / θ.powi(4);
+        let d = 0.5 * (c - 3.0 * (θ - θ.sin() - θ.powi(3) / 6.0) / θ.powi(5));
+        (b, c, d)
+    };
+    a * ma + b * mb + c * mc + d * md
+}
+
+/// TODO ： CHECK for left jac and right jac conversion
+pub fn jac_l(ρ: Vec3, θ_vec: Vec3) -> OMatrix<f64, U6, U6> {
+    // let θ = (θ_vec.dot(&θ_vec)).sqrt();
+    let jr3 = jac3_r(θ_vec);
+    let jl3 = jr3.transpose(); // TODO: Check
+    let jlq3 = jlq(ρ, θ_vec);
+
+    let mut jacl = OMatrix::<f64, U6, U6>::zeros();
+    jacl.index_mut((0..3, 0..3)).copy_from(&jl3);
+    jacl.index_mut((0..3, 3..6)).copy_from(&jlq3);
+    jacl.index_mut((3..6, 3..6)).copy_from(&jl3);
+
+    jacl
+}
+
+pub fn jac_r(ρ: Vec3, θ_vec: Vec3) -> OMatrix<f64, U6, U6> {
+    jac_l(-ρ, -θ_vec)
+}
+
+pub trait One2OneMapSE {
+    fn to_grp(self) -> Grp6;
+    fn to_alg(self) -> Alg6;
+    fn to_vec(self) -> Vec6;
+}
+
+impl One2OneMapSE for SE3 {
+    fn to_alg(self) -> Alg6 {
+        match self {
+            Self::Alg(alg) => alg,
+            Self::Grp(grp) => log(grp),
+            Self::Vec(vec) => hat(vec),
+        }
+    }
+    fn to_grp(self) -> Grp6 {
+        match self {
+            Self::Alg(alg) => exp(alg),
+            Self::Grp(grp) => grp,
+            Self::Vec(vec) => exp(hat(vec)),
+        }
+    }
+    fn to_vec(self) -> Vec6 {
+        match self {
+            Self::Alg(alg) => vee(alg),
+            Self::Grp(grp) => vee(log(grp)),
+            Self::Vec(vec) => vec,
+        }
+    }
+}
+
+impl SE3 {
+    pub fn inverse(&self) -> Self {
+        let τ_grp = self.to_grp();
+        let θ_grp: Grp3 = τ_grp.fixed_slice::<3, 3>(0, 0).into();
+        let t: Vec3 = τ_grp.fixed_slice::<3, 1>(0, 3).into();
+
+        let r_inv = θ_grp.transpose();
+        let new_θ_grp = r_inv;
+        let new_t = -r_inv * t;
+
+        let mut new_τ_grp = Grp6::zeros();
+        new_τ_grp.index_mut((0..3, 0..3)).copy_from(&new_θ_grp);
+        new_τ_grp.index_mut((0..3, 3)).copy_from(&new_t);
+        new_τ_grp[(3, 3)] = 1.0;
+
+        Self::from_grp(new_τ_grp)
+    }
+    pub fn adj(&self) -> OMatrix<f64, U6, U6> {
+        let τ_grp = self.to_grp();
+        let θ_grp: Grp3 = τ_grp.fixed_slice::<3, 3>(0, 0).into();
+        let t: Vec3 = τ_grp.fixed_slice::<3, 1>(0, 3).into();
+
+        let mut ad = OMatrix::<f64, U6, U6>::zeros();
+        ad.index_mut((0..3, 0..3)).copy_from(&θ_grp);
+        ad.index_mut((0..3, 3..6)).copy_from(&(hat3(t) * θ_grp));
+        ad.index_mut((3..6, 3..6)).copy_from(&θ_grp);
+
+        ad
+    }
+    pub fn act_v(&self, x: Vec3) -> Vec3 {
+        let τ_grp = self.to_grp();
+        let r: Grp3 = τ_grp.fixed_slice::<3, 3>(0, 0).into();
+        let t: Vec3 = τ_grp.fixed_slice::<3, 1>(0, 3).into();
+        t + r * x
+    }
+    pub fn act_g(&self, x: Self) -> Self {
+        Self::from_grp(self.to_grp() * x.to_grp())
+    }
+    pub fn plus_r(&self, x: Vec6) -> Self {
+        let se2 = SE3::from_vec(x);
+        self.act_g(se2)
+    }
+    pub fn minus_r(&self, x: Self) -> Vec6 {
+        let dse = x.inverse().act_g(*self);
+        dse.to_vec()
+    }
 }
