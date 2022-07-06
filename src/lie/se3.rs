@@ -51,6 +51,9 @@ pub type Alg6 = OMatrix<f64, U4, U4>;
 pub type Grp6 = OMatrix<f64, U4, U4>;
 pub type Vec6 = OVector<f64, U6>;
 
+///
+///
+/// ///
 #[derive(Debug, Clone, Copy)]
 pub enum SE3 {
     Grp(Grp6),
