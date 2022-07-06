@@ -28,7 +28,7 @@ pub mod kf {
 }
 
 pub mod dfilters;
-mod errors;
+pub mod errors;
 pub mod filters;
 pub mod lie;
 // pub mod sfilters;

@@ -1,5 +1,6 @@
+use seekf::SEEKF;
 use yakf::lie::se3::combine;
-use yakf::lie::se3::{seekf::SEEKF, Alg6, Grp6, One2OneMapSE, Vec6, SE3};
+use yakf::lie::se3::{Alg6, Grp6, One2OneMapSE, Vec6, SE3};
 use yakf::lie::so3::{Alg3, Grp3, One2OneMap, Vec3, SO3};
 
 use yakf::linalg::{Const, OMatrix, OVector, U2, U3, U4, U6};
@@ -89,4 +90,118 @@ fn main() {
     }
 
     assert!(error < 1e-2);
+}
+
+pub mod seekf {
+    use yakf::time::{Duration, Epoch};
+
+    use yakf::errors::YakfError;
+    use yakf::lie::se3::{combine, decombine, hat, jac_r, Alg6, Grp6, One2OneMapSE, Vec6, SE3};
+    use yakf::lie::so3::{hat as hat3, Vec3};
+
+    use crate::linalg::allocator::Allocator;
+    use crate::linalg::{Const, DefaultAllocator, DimName, OMatrix, OVector, U3, U4, U6};
+    pub struct SEEKF {
+        pub state: SE3,
+        pmatrix: OMatrix<f64, U6, U6>,
+        qmatrix: OMatrix<f64, U6, U6>,
+        nmatrix: OMatrix<f64, Const<12>, Const<12>>,
+    }
+    impl SEEKF {
+        #[allow(dead_code)]
+        /// function that returns a UKF
+        pub fn build(
+            state: SE3,
+            pmatrix: OMatrix<f64, U6, U6>,
+            qmatrix: OMatrix<f64, U6, U6>,
+            nmatrix: OMatrix<f64, Const<12>, Const<12>>,
+        ) -> Self {
+            Self {
+                state,
+                pmatrix,
+                qmatrix,
+                nmatrix,
+            }
+        }
+
+        pub fn transition_f(&self, &u: &Vec6, dt: Duration) -> OMatrix<f64, U6, U6> {
+            let v = u * dt.in_seconds();
+            let so = SE3::from_vec(v);
+            let x = so.inverse().adj();
+            x
+        }
+
+        pub fn transition_g(&self, u: &Vec6, dt: Duration) -> OMatrix<f64, U6, U6> {
+            let v = u * dt.in_seconds();
+            let (ρ, θ) = decombine(v);
+
+            jac_r(ρ, θ)
+        }
+
+        pub fn transition_h(&self, x_predict: &SE3, bk: &[Vec3; 4]) -> OMatrix<f64, Const<12>, U6> {
+            let mut m = OMatrix::<f64, Const<12>, U6>::zeros();
+            let (r, t) = x_predict.to_r_t();
+            let r_t = r.transpose();
+            for i in 0..4 {
+                let mut left = OMatrix::<f64, U3, U6>::zeros();
+                left.index_mut((0..3, 0..3)).copy_from(&r);
+                left.index_mut((0..3, 3..6)).copy_from(&(-r * hat3(bk[i])));
+                let right = -x_predict.adj();
+                let block = left * right;
+                m.index_mut((i * 3..i * 3 + 3, 0..6)).copy_from(&block);
+            }
+            m
+        }
+
+        pub fn propagate(&self, u: &Vec6, dt: Duration) -> SE3 {
+            let v = u * dt.in_seconds();
+            let y = self.state.plus_r(v);
+            y
+        }
+        pub fn measure(&self, x_predict: &SE3, bk: &[Vec3; 4]) -> OVector<f64, Const<12>> {
+            let mut ob = OVector::<f64, Const<12>>::zeros();
+            let x_inv = x_predict.inverse();
+            for i in 0..4 {
+                let block = x_inv.act_v(bk[i]);
+                ob.index_mut((i * 3..i * 3 + 3, 0..1)).copy_from(&block);
+            }
+            ob
+        }
+
+        #[allow(dead_code)]
+        pub fn feed_and_update(
+            &mut self,
+            measure: OVector<f64, Const<12>>,
+            dt: Duration,
+            u: Vec6,
+            bk: &[Vec3; 4],
+        ) -> Result<(), YakfError> {
+            let mut x_predict = self.propagate(&u, dt);
+
+            let f = self.transition_f(&u, dt);
+            let g = self.transition_g(&u, dt);
+
+            let p_predict = f * &self.pmatrix * &f.transpose() + g * &self.qmatrix * &g.transpose();
+
+            let ob_predict = self.measure(&x_predict, bk);
+
+            let z = measure - ob_predict;
+
+            let h = self.transition_h(&x_predict, bk);
+
+            let zmatrix = h * p_predict * h.transpose() + self.nmatrix;
+
+            match zmatrix.try_inverse() {
+                Some(zm_inv) => {
+                    let kmatrix = p_predict * h.transpose() * zm_inv;
+                    let dx = kmatrix * z;
+                    self.state = x_predict.plus_r(dx);
+                    self.pmatrix = &self.pmatrix - &kmatrix * &zmatrix * &kmatrix.transpose();
+
+                    Ok(())
+                }
+                None => Err(YakfError::InverseErr),
+            }
+        }
+    }
 }
