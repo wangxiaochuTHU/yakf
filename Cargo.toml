@@ -11,8 +11,8 @@ exclude = [
 keywords = ["no-std", "estimation", "filtering", "ukf"]
 license = "MIT OR Apache-2.0"
 name = "yakf"
-repository = "https://github.com/wangxiaochuTHU/yakf/tree/lie"
-version = "0.1.10"
+repository = "https://github.com/wangxiaochuTHU/yakf"
+version = "0.1.11"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

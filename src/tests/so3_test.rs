@@ -32,7 +32,6 @@ mod tests {
             let v2 = SO3::from_grp(grp).to_vec();
 
             let grp2 = SO3::from_vec(v2).to_grp();
-            println!("error of grp - grp2 = {}", (grp - grp2).norm());
             assert!((grp - grp2).norm() < 1e-6);
         }
     }
