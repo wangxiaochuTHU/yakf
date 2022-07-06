@@ -150,7 +150,7 @@ impl One2OneMap for SO3 {
             Self::Vec(vec) => hat(vec),
         }
     }
-    /// transforming the SO(3) element to the form of grouo
+    /// transforming the SO(3) element to the form of group
     fn to_grp(self) -> Grp3 {
         match self {
             Self::Alg(alg) => exp(alg),
@@ -178,11 +178,11 @@ impl SO3 {
     pub fn adj(&self) -> Grp3 {
         self.to_grp()
     }
-    /// SO(3) element, action on vector
+    /// for SO(3) element, action on vector
     pub fn act_v(&self, x: Vec3) -> Vec3 {
         self.to_grp() * x
     }
-    /// SO(3) element, action on element
+    /// for SO(3) element, action on element
     pub fn act_g(&self, x: Self) -> Self {
         Self::from_grp(self.to_grp() * x.to_grp())
     }
