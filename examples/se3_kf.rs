@@ -99,8 +99,8 @@ pub mod seekf {
     use yakf::lie::se3::{combine, decombine, hat, jac_r, Alg6, Grp6, One2OneMapSE, Vec6, SE3};
     use yakf::lie::so3::{hat as hat3, Vec3};
 
-    use crate::linalg::allocator::Allocator;
-    use crate::linalg::{Const, DefaultAllocator, DimName, OMatrix, OVector, U3, U4, U6};
+    use se3_kf::linalg::allocator::Allocator;
+    use se3_kf::linalg::{Const, DefaultAllocator, DimName, OMatrix, OVector, U3, U4, U6};
     pub struct SEEKF {
         pub state: SE3,
         pmatrix: OMatrix<f64, U6, U6>,
