@@ -24,8 +24,8 @@ Lie Theory (Lie group, algebra, vector) on SO(3) and SE(3).
 * SE(3) ✅, refer to `yakf::lie::se3`
 
 ## Lie Group Examples
-* ***(non-generic) Kalman Filter on SO(3)*** ✅ see `examples/so3_kf.rs` for instance
-* ***(non-generic) Kalman Filter on SE(3)*** ✅ see `examples/se3_kf.rs` for instance
+* (non-generic) Kalman Filter Example on SO(3) ✅ see `examples/so3_kf.rs` for instance
+* (non-generic) Kalman Filter Example on SE(3) ✅ see `examples/se3_kf.rs` for instance
 
 
 ***NOTE that some functions havn't been thoroughly tested, so please let me know if there is any error.***
