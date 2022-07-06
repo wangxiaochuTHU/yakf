@@ -33,6 +33,8 @@ pub type Alg3 = OMatrix<f64, U3, U3>;
 pub type Grp3 = OMatrix<f64, U3, U3>;
 pub type Vec3 = OVector<f64, U3>;
 
+/// Enum for SO(3) element.
+/// SO(3) element can be expressed in three forms,i.e. in group, in algebra, and in vector.
 #[derive(Debug, Clone, Copy)]
 pub enum SO3 {
     Grp(Grp3),
@@ -40,24 +42,30 @@ pub enum SO3 {
     Vec(Vec3),
 }
 impl SO3 {
+    /// create an SO(3) element from group
     pub fn from_grp(grp: Grp3) -> Self {
         Self::Grp(grp)
     }
+    /// create an SO(3) element from algebra
     pub fn from_alg(alg: Alg3) -> Self {
         Self::Alg(alg)
     }
+    /// create an SO(3) element from vector
     pub fn from_vec(vec: Vec3) -> Self {
         Self::Vec(vec)
     }
 }
 
+/// SO(3) mapping vector to algebra
 pub fn hat(w: Vec3) -> Alg3 {
     Alg3::new(0.0, -w[2], w[1], w[2], 0.0, -w[0], -w[1], w[0], 0.0)
 }
+/// SO(3) mapping algebra to vector
 pub fn vee(alg: Alg3) -> Vec3 {
     Vec3::new(alg.m32, alg.m13, alg.m21)
 }
 
+/// SO(3) mapping algebra to group
 pub fn exp(alg: Alg3) -> Grp3 {
     let θ_vec = Vec3::new(alg.m32, alg.m13, alg.m21);
 
@@ -74,6 +82,7 @@ pub fn exp(alg: Alg3) -> Grp3 {
     Grp3::identity() + a * &alg + b * &alg.pow(2)
 }
 
+/// SO(3) mapping group to algebra
 pub fn log(grp: Grp3) -> Alg3 {
     let trace = grp.trace();
     if (trace - 3.0).abs() < SMALL_FLOAT {
@@ -109,6 +118,7 @@ pub fn log(grp: Grp3) -> Alg3 {
     }
 }
 
+/// SO(3) get right jacobian matrix
 pub fn jac_r(θ_vec: Vec3) -> OMatrix<f64, U3, U3> {
     let θ = (θ_vec.dot(&θ_vec)).sqrt();
     let θ_alg = hat(θ_vec);
@@ -124,36 +134,7 @@ pub fn jac_r(θ_vec: Vec3) -> OMatrix<f64, U3, U3> {
     OMatrix::<f64, U3, U3>::identity() + a * θ_alg + b * θ_alg.pow(2)
 }
 
-// pub trait One2OneMap {
-//     fn to_grp(x: Self) -> Self;
-//     fn to_alg(x: Self) -> Self;
-//     fn to_vec(x: Self) -> Self;
-// }
-
-// impl One2OneMap for SO3 {
-//     fn to_alg(x: Self) -> Self {
-//         match x {
-//             Self::Alg(alg) => Self::Alg(alg),
-//             Self::Grp(grp) => Self::Alg(log(grp)),
-//             Self::Vec(vec) => Self::Alg(hat(vec)),
-//         }
-//     }
-//     fn to_grp(x: Self) -> Self {
-//         match x {
-//             Self::Alg(alg) => Self::Grp(exp(alg)),
-//             Self::Grp(grp) => Self::Grp(grp),
-//             Self::Vec(vec) => Self::Grp(exp(hat(vec))),
-//         }
-//     }
-//     fn to_vec(x: Self) -> Self {
-//         match x {
-//             Self::Alg(alg) => Self::Vec(vee(alg)),
-//             Self::Grp(grp) => Self::Vec(vee(log(grp))),
-//             Self::Vec(vec) => Self::Vec(vec),
-//         }
-//     }
-// }
-
+/// a trait for transforming the SO(3) element from one form to another
 pub trait One2OneMap {
     fn to_grp(self) -> Grp3;
     fn to_alg(self) -> Alg3;
@@ -161,6 +142,7 @@ pub trait One2OneMap {
 }
 
 impl One2OneMap for SO3 {
+    /// transforming the SO(3) element to the form of algebra
     fn to_alg(self) -> Alg3 {
         match self {
             Self::Alg(alg) => alg,
@@ -168,6 +150,7 @@ impl One2OneMap for SO3 {
             Self::Vec(vec) => hat(vec),
         }
     }
+    /// transforming the SO(3) element to the form of grouo
     fn to_grp(self) -> Grp3 {
         match self {
             Self::Alg(alg) => exp(alg),
@@ -175,6 +158,7 @@ impl One2OneMap for SO3 {
             Self::Vec(vec) => exp(hat(vec)),
         }
     }
+    /// transforming the SO(3) element to the form of vector
     fn to_vec(self) -> Vec3 {
         match self {
             Self::Alg(alg) => vee(alg),
@@ -185,23 +169,29 @@ impl One2OneMap for SO3 {
 }
 
 impl SO3 {
+    /// inverse the SO(3) element
     pub fn inverse(&self) -> Self {
         let r_inv = self.to_grp().transpose();
         Self::from_grp(r_inv)
     }
+    /// adjoint matrix of the SO(3) element
     pub fn adj(&self) -> Grp3 {
         self.to_grp()
     }
+    /// SO(3) element, action on vector
     pub fn act_v(&self, x: Vec3) -> Vec3 {
         self.to_grp() * x
     }
+    /// SO(3) element, action on element
     pub fn act_g(&self, x: Self) -> Self {
         Self::from_grp(self.to_grp() * x.to_grp())
     }
+    /// SO(3) element right plus a vector
     pub fn plus_r(&self, x: Vec3) -> Self {
         let so2 = SO3::from_vec(x);
         self.act_g(so2)
     }
+    /// SO(3) element right minus another element
     pub fn minus_r(&self, x: Self) -> Vec3 {
         let dso = x.inverse().act_g(*self);
         dso.to_vec()
