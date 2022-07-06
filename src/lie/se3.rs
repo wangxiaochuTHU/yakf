@@ -53,7 +53,8 @@ pub type Vec6 = OVector<f64, U6>;
 
 ///
 ///
-/// ///
+/// Enum for SE(3) element.
+/// SE(3) element can be expressed in three forms,i.e. in group, in algebra, and in vector.
 #[derive(Debug, Clone, Copy)]
 pub enum SE3 {
     Grp(Grp6),
@@ -62,17 +63,21 @@ pub enum SE3 {
 }
 
 impl SE3 {
+    /// create an SE(3) element from group
     pub fn from_grp(grp: Grp6) -> Self {
         Self::Grp(grp)
     }
+    /// create an SE(3) element from algebra
     pub fn from_alg(alg: Alg6) -> Self {
         Self::Alg(alg)
     }
+    /// create an SE(3) element from vector
     pub fn from_vec(vec: Vec6) -> Self {
         Self::Vec(vec)
     }
 }
 
+/// SE(3) mapping vector to algebra
 pub fn hat(τ: Vec6) -> Alg6 {
     let (ρ, θ) = decombine(τ);
     let mut alg = Alg6::zeros();
@@ -83,6 +88,7 @@ pub fn hat(τ: Vec6) -> Alg6 {
     alg
 }
 
+/// SE(3) mapping algebra to vector
 pub fn vee(alg: Alg6) -> Vec6 {
     let θ_alg: Alg3 = alg.fixed_slice::<3, 3>(0, 0).into();
     let ρ: Vec3 = alg.fixed_slice::<3, 1>(0, 3).into();
@@ -92,16 +98,19 @@ pub fn vee(alg: Alg6) -> Vec6 {
     combine(ρ, θ)
 }
 
+/// combine two vector3 (ρ θ) into one vector6 (τ)
 pub fn combine(ρ: Vec3, θ: Vec3) -> Vec6 {
     Vec6::new(ρ[0], ρ[1], ρ[2], θ[0], θ[1], θ[2])
 }
 
+/// decombine a vector6 τ into two vector3 (ρ θ)
 pub fn decombine(τ: Vec6) -> (Vec3, Vec3) {
     let ρ = Vec3::new(τ[0], τ[1], τ[2]);
     let θ = Vec3::new(τ[3], τ[4], τ[5]);
     (ρ, θ)
 }
 
+/// SE(3) mapping algebra to group
 pub fn exp(τ_alg: Alg6) -> Grp6 {
     let τ = vee(τ_alg);
     let (ρ, θ_vec) = decombine(τ);
@@ -129,6 +138,7 @@ pub fn exp(τ_alg: Alg6) -> Grp6 {
     grp
 }
 
+/// SE(3) mapping group to algebra
 pub fn log(grp: Grp6) -> Alg6 {
     let θ_grp: Grp3 = grp.fixed_slice::<3, 3>(0, 0).into();
     let t: Vec3 = grp.fixed_slice::<3, 1>(0, 3).into();
@@ -194,10 +204,12 @@ pub fn jac_l(ρ: Vec3, θ_vec: Vec3) -> OMatrix<f64, U6, U6> {
     jacl
 }
 
+/// SE(3) get right jacobian matrix
 pub fn jac_r(ρ: Vec3, θ_vec: Vec3) -> OMatrix<f64, U6, U6> {
     jac_l(-ρ, -θ_vec)
 }
 
+/// a trait for transforming the SE(3) element from one form to another
 pub trait One2OneMapSE {
     fn to_grp(self) -> Grp6;
     fn to_alg(self) -> Alg6;
@@ -205,6 +217,7 @@ pub trait One2OneMapSE {
 }
 
 impl One2OneMapSE for SE3 {
+    /// transforming the SE(3) element to the form of algebra
     fn to_alg(self) -> Alg6 {
         match self {
             Self::Alg(alg) => alg,
@@ -212,6 +225,7 @@ impl One2OneMapSE for SE3 {
             Self::Vec(vec) => hat(vec),
         }
     }
+    /// transforming the SE(3) element to the form of group
     fn to_grp(self) -> Grp6 {
         match self {
             Self::Alg(alg) => exp(alg),
@@ -219,6 +233,7 @@ impl One2OneMapSE for SE3 {
             Self::Vec(vec) => exp(hat(vec)),
         }
     }
+    /// transforming the SE(3) element to the form of vector
     fn to_vec(self) -> Vec6 {
         match self {
             Self::Alg(alg) => vee(alg),
@@ -229,6 +244,7 @@ impl One2OneMapSE for SE3 {
 }
 
 impl SE3 {
+    // inverse the SE(3) element
     pub fn inverse(&self) -> Self {
         let τ_grp = self.to_grp();
         let θ_grp: Grp3 = τ_grp.fixed_slice::<3, 3>(0, 0).into();
@@ -245,6 +261,8 @@ impl SE3 {
 
         Self::from_grp(new_τ_grp)
     }
+
+    /// adjoint matrix of the SE(3) element
     pub fn adj(&self) -> OMatrix<f64, U6, U6> {
         let τ_grp = self.to_grp();
         let θ_grp: Grp3 = τ_grp.fixed_slice::<3, 3>(0, 0).into();
@@ -257,24 +275,33 @@ impl SE3 {
 
         ad
     }
+
+    /// for SE(3) element, action on vector
     pub fn act_v(&self, x: Vec3) -> Vec3 {
         let τ_grp = self.to_grp();
         let r: Grp3 = τ_grp.fixed_slice::<3, 3>(0, 0).into();
         let t: Vec3 = τ_grp.fixed_slice::<3, 1>(0, 3).into();
         t + r * x
     }
+
+    /// for SE(3) element, action on element
     pub fn act_g(&self, x: Self) -> Self {
         Self::from_grp(self.to_grp() * x.to_grp())
     }
+
+    /// SE(3) element right plus a vector
     pub fn plus_r(&self, x: Vec6) -> Self {
         let se2 = SE3::from_vec(x);
         self.act_g(se2)
     }
+
+    /// SE(3) element right minus another element
     pub fn minus_r(&self, x: Self) -> Vec6 {
         let dse = x.inverse().act_g(*self);
         dse.to_vec()
     }
 
+    /// rotation matrix and translation vector, extracted from a SE(3) element
     pub fn to_r_t(&self) -> (Grp3, Vec3) {
         let τ_grp = self.to_grp();
         let r: Grp3 = τ_grp.fixed_slice::<3, 3>(0, 0).into();
@@ -282,6 +309,7 @@ impl SE3 {
         (r, t)
     }
 
+    /// create a SE(3) element, from a rotation matrix and a translation vector
     pub fn from_r_t(r: Grp3, t: Vec3) -> Self {
         let mut grp = Grp6::zeros();
         grp.index_mut((0..3, 0..3)).copy_from(&r);
