@@ -10,7 +10,6 @@ Lie Theory (Lie group, algebra, vector) on SO(3) and SE(3).
 ## Filter Status
 * UKF ✅ 
 * EKF (Only dynamically-sized version) ✅ 
-* ***(unfinished, non-generic) Kalman Filter on SO(3)*** ✅ see `yakf::lie::so3::sosekf::SOEKF` for instance
 
 ## Sampling Method Status
 * Minimal Skew Simplex Sampling (n+2) ✅
@@ -24,10 +23,14 @@ Lie Theory (Lie group, algebra, vector) on SO(3) and SE(3).
 * SO(3) ✅, refer to `yakf::lie::so3`
 * SE(3) ✅, refer to `yakf::lie::se3`
 
+## Lie Group Examples
+* ***(non-generic) Kalman Filter on SO(3)*** ✅ see `examples/so3_kf.rs` for instance
+* ***(non-generic) Kalman Filter on SE(3)*** ✅ see `examples/se3_kf.rs` for instance
+
 
 ***NOTE that some functions havn't been thoroughly tested, so please let me know if there is any error.***
 
-# Usage
+# UKF Usage
 Add this to your Cargo.toml:
 ```
 [dependencies]
@@ -209,3 +212,32 @@ actual = [494.0, 1.0], meas = [492.615, 0.941], estimate = [492.598, 0.941]
 actual = [495.0, 1.0], meas = [496.849, 1.019], estimate = [495.710, 1.019]
 noise_metric = 1.5346849337852513, error_metric = 1.2218914483371828
 ```
+
+# SO(3)/SE(3) Usage
+
+The element in SO(3) is stored as an Enum type, named by `SO3`.
+One can create such an element by methods `from_vec`, `from_grp`, `from_alg`. Either will be Ok, since an element can be expressed in all the three forms, and there exists a one-on-one mapping relationship among them.
+
+For example, one can create a SO3 element `so` from a 3-d vector:
+
+```
+let so = SO3::from_vec(Vec3::new(0.3, 0.6, -0.9));
+```
+If you want use its vector form, just call 
+```
+let v = so.to_vec();
+```
+if you want use its group form, just call 
+```
+let g = so.to_group();
+```
+and if you want use its algebra form, just call 
+```
+let a = so.to_alg();
+```
+As you know, all `v`, `g`, `a` stand for the same `SO3` element `so` (limited in a proper range).
+
+Currently, some neccessary methods have been implemented for `SO3`.
+
+The design of `SE(3)` is consensus with `SO(3)`. 
+
