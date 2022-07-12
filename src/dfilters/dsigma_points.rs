@@ -1,6 +1,7 @@
 use super::dfixed::{dmatrix_zeros, dvector_zeros};
 use crate::errors::YakfError;
 use crate::linalg::{DMatrix, DVector};
+use num_traits::float::FloatCore;
 /// Any sampling method that implements `DSamplingMethod` trait
 /// can be used by DUKF struct.
 pub trait DSamplingMethod {
@@ -121,7 +122,7 @@ impl DMinimalSkewSimplexSampling {
             self.weights
                 .iter()
                 .enumerate()
-                .map(|(i, w)| if i == 0 { 0.0 } else { 1.0 / (2.0 * w).sqrt() });
+                .map(|(i, w)| if i == 0 { 0.0 } else { 1.0 / libm::sqrt(2.0 * w) });
 
         // col-1 can be expanded as
         let mut col1 = dvector_zeros(n);
@@ -189,7 +190,7 @@ impl DSamplingMethod for DSymmetricallyDistributedSampling {
             Some(cholesky) => {
                 let cho = cholesky.unpack();
                 let mut samples: DMatrix<f64> = dmatrix_zeros(self.n, 2 * self.n + 1);
-                let sqrt_lamda_plus_n = self.get_k().unwrap().sqrt();
+                let sqrt_lamda_plus_n =  libm::sqrt(self.get_k().unwrap());
                 for (i, mut col) in samples.column_iter_mut().enumerate() {
                     if i == 0 {
                         let chi = state;
