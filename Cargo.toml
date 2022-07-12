@@ -17,11 +17,13 @@ version = "0.1.11"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-hifitime = "3.2.0"
-itertools = "0.10.3"
+hifitime = { version="3.2.0",default-features = false}
+itertools = { version = "0.10.3",default-features = false}
 log = "0.4"
 # nalgebra = {git = "https://github.com/dimforge/nalgebra", features = ["default"]}
-nalgebra = {version = "0.31"}
+nalgebra = {version = "0.30",default-features = false,features = ["libm-force","alloc"]}
+libm = "0.2.2"
+num-traits = {version = "0.2.15", default-features = false}
 
 [dev-dependencies]
 libc-print = "0.1.19"

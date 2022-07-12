@@ -1,6 +1,7 @@
 use crate::errors::YakfError;
 use crate::linalg::allocator::Allocator;
 use crate::linalg::{DefaultAllocator, DimName, OMatrix, OVector};
+use num_traits::float::FloatCore;
 
 /// Any sampling method that implements `SamplingMethod<T, T2>` trait
 /// can be used by UKF struct.
@@ -145,7 +146,6 @@ where
 
         // weight 0 is specified.
         self.weights[0] = w0;
-
         // weights [1, 2]
         for i in 1..3 {
             self.weights[i] = (1.0 - self.weights[0]) / 2_f64.powi(n as i32);
@@ -177,8 +177,7 @@ where
             self.weights
                 .iter()
                 .enumerate()
-                .map(|(i, w)| if i == 0 { 0.0 } else { 1.0 / (2.0 * w).sqrt() });
-
+                .map(|(i, w)| if i == 0 { 0.0 } else { 1.0 / libm::sqrt(2.0 * w) });
         // col-1 can be expanded as
         let mut col1 = OVector::<f64, T>::zeros();
         w_iter.next();
@@ -277,7 +276,7 @@ where
             Some(cholesky) => {
                 let cho = cholesky.unpack();
                 let mut samples: OMatrix<f64, T, T2> = OMatrix::<f64, T, T2>::zeros();
-                let sqrt_lamda_plus_n = self.get_lamda_plus_n().unwrap().sqrt();
+                let sqrt_lamda_plus_n = libm::sqrt(self.get_lamda_plus_n().unwrap());
                 for (i, mut col) in samples.column_iter_mut().enumerate() {
                     if i == 0 {
                         let chi = state;

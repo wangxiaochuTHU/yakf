@@ -65,7 +65,7 @@ pub fn test() -> DMatrix<f64> {
         pub fn empty(d: usize) -> Self {
             Self {
                 x: DVector::<f64>::zeros(d),
-                t: Epoch::now().unwrap(),
+                t: Epoch::from_gpst_nanoseconds(0),
             }
         }
     }
