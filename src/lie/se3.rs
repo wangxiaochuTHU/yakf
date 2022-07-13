@@ -138,6 +138,35 @@ pub fn exp(τ_alg: Alg6) -> Grp6 {
     grp
 }
 
+/// SE(3) mapping vec6 to group
+#[allow(non_snake_case)]
+pub fn Exp(τ: Vec6) -> Grp6 {
+    let (ρ, θ_vec) = decombine(τ);
+    let τ_alg = hat(τ);
+    let θ_alg: Alg3 = τ_alg.fixed_slice::<3, 3>(0, 0).into();
+    let θ_grp = exp3(θ_alg);
+
+    let θ = (θ_vec.dot(&θ_vec)).sqrt();
+    let (a, b) = if θ < SMALL_FLOAT {
+        let a = 0.5 - θ.powi(2) / 24.0 + θ.powi(4) / 720.0;
+        let b = 1.0 / 6.0 - θ.powi(2) / 120.0 + θ.powi(4) / 5040.0;
+        (a, b)
+    } else {
+        let a = (1.0 - θ.cos()) / θ.powi(2);
+        let b = (θ - θ.sin()) / θ.powi(3);
+        (a, b)
+    };
+    let v_m = OMatrix::<f64, U3, U3>::identity() + a * θ_alg + b * θ_alg.pow(2);
+    let t = v_m * ρ;
+
+    let mut grp = Grp6::zeros();
+    grp.index_mut((0..3, 0..3)).copy_from(&θ_grp);
+    grp.index_mut((0..3, 3)).copy_from(&t);
+    grp[(3, 3)] = 1.0;
+
+    grp
+}
+
 /// SE(3) mapping group to algebra
 pub fn log(grp: Grp6) -> Alg6 {
     let θ_grp: Grp3 = grp.fixed_slice::<3, 3>(0, 0).into();
@@ -163,6 +192,30 @@ pub fn log(grp: Grp6) -> Alg6 {
     τ_alg.index_mut((0..3, 3)).copy_from(&ρ);
 
     τ_alg
+}
+
+/// SE(3) mapping group to vec6
+#[allow(non_snake_case)]
+pub fn Log(grp: Grp6) -> Vec6 {
+    let θ_grp: Grp3 = grp.fixed_slice::<3, 3>(0, 0).into();
+    let t: Vec3 = grp.fixed_slice::<3, 1>(0, 3).into();
+
+    let θ_alg = log3(θ_grp);
+
+    let θ_vec = vee3(θ_alg);
+    let θ = (θ_vec.dot(&θ_vec)).sqrt();
+    let a = if θ < SMALL_FLOAT {
+        let a = (1.0 / 12.0 - θ.powi(2) / 180.0 + θ.powi(4) / 5040.0)
+            / (1.0 - θ.powi(2) / 12.0 + θ.powi(4) / 360.0);
+        a
+    } else {
+        let a = (1.0 - θ * θ.sin() / 2.0 / (1.0 - θ.cos())) / θ.powi(2);
+        a
+    };
+    let vm_inv = OMatrix::<f64, U3, U3>::identity() - 0.5 * θ_alg + a * θ_alg.pow(2);
+    let ρ = vm_inv * t;
+
+    combine(ρ, θ_vec)
 }
 
 /// TODO: CHECK AGAIN
@@ -230,14 +283,14 @@ impl One2OneMapSE for SE3 {
         match self {
             Self::Alg(alg) => exp(alg),
             Self::Grp(grp) => grp,
-            Self::Vec(vec) => exp(hat(vec)),
+            Self::Vec(vec) => Exp(vec),
         }
     }
     /// transforming the SE(3) element to the form of vector
     fn to_vec(self) -> Vec6 {
         match self {
             Self::Alg(alg) => vee(alg),
-            Self::Grp(grp) => vee(log(grp)),
+            Self::Grp(grp) => Log(grp),
             Self::Vec(vec) => vec,
         }
     }
