@@ -1,9 +1,9 @@
 [env]
 
-[build]
-target = "thumbv7em-none-eabihf"
+# [build]
+# target = "thumbv7em-none-eabihf"
 
-[source.crates-io]
+#[source.crates-io]
 registry = "git://github.com/rust-lang/crates.io-index"
 replace-with = 'ustc'
 
