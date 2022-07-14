@@ -16,18 +16,10 @@
 ///
 use nalgebra::ComplexField;
 
-use crate::alloc::borrow::ToOwned;
-use crate::alloc::vec::Vec;
-use crate::time::{Duration, Epoch};
-use core::convert::AsRef;
-use core::convert::From;
 use core::f64::consts::PI;
 
-use crate::errors::YakfError;
-use crate::linalg::allocator::Allocator;
-use crate::linalg::{DefaultAllocator, DimName, OMatrix, OVector, SMatrix, U3, U4, U6};
-
-pub const SMALL_FLOAT: f64 = 1e-7;
+use super::constants::SMALL_FLOAT;
+use crate::linalg::{OMatrix, OVector, U3};
 
 pub type Alg3 = OMatrix<f64, U3, U3>;
 pub type Grp3 = OMatrix<f64, U3, U3>;

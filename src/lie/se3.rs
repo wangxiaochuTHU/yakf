@@ -1,6 +1,6 @@
+use super::constants::SMALL_FLOAT;
 use super::so3::{
     exp as exp3, hat as hat3, jac_r as jac3_r, log as log3, vee as vee3, Alg3, Grp3, Vec3,
-    SMALL_FLOAT, SO3,
 };
 /// Generators of SE(3) are used as below:
 ///
@@ -36,16 +36,7 @@ use super::so3::{
 ///  se(3) vector follows the order: [ ρ , θ ]
 use nalgebra::ComplexField;
 
-use crate::alloc::borrow::ToOwned;
-use crate::alloc::vec::Vec;
-use crate::time::{Duration, Epoch};
-use core::convert::AsRef;
-use core::convert::From;
-use core::f64::consts::PI;
-
-use crate::errors::YakfError;
-use crate::linalg::allocator::Allocator;
-use crate::linalg::{DefaultAllocator, DimName, OMatrix, OVector, SMatrix, U3, U4, U6};
+use crate::linalg::{OMatrix, OVector, U3, U4, U6};
 
 pub type Alg6 = OMatrix<f64, U4, U4>;
 pub type Grp6 = OMatrix<f64, U4, U4>;

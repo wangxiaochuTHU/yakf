@@ -9,7 +9,7 @@ use nalgebra::ComplexField;
 use crate::linalg::{OMatrix, OVector, U2};
 use libm::atan2;
 
-pub const SMALL_FLOAT: f64 = 1e-7;
+use super::constants::SMALL_FLOAT;
 
 pub type Alg1 = OMatrix<f64, U2, U2>;
 pub type Grp1 = OMatrix<f64, U2, U2>;
