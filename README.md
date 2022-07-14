@@ -1,7 +1,7 @@
 # yakf - Yet Another Kalman Filter
 Yet Another Kalman Filter Implementation, as well as, 
 
-Lie Theory (Lie group, algebra, vector) on SO(3) and SE(3).
+Lie Theory (Lie group, algebra, vector) on SO(3), SE(3), SO(2), and SE(2).
 
 `[no_std]` is supported by default.
 
@@ -22,6 +22,8 @@ Lie Theory (Lie group, algebra, vector) on SO(3) and SE(3).
 ## Lie Group Status
 * SO(3) ✅, refer to `yakf::lie::so3`
 * SE(3) ✅, refer to `yakf::lie::se3`
+* SO(2) ✅, refer to `yakf::lie::so2`
+* SE(2) ✅, refer to `yakf::lie::se2`
 
 ## Lie Group Examples
 * (non-generic) Kalman Filter Example on SO(3) ✅ see `examples/so3_kf.rs` for instance
