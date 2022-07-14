@@ -127,13 +127,13 @@ pub fn jac_r(θ_vec: Vec3) -> OMatrix<f64, U3, U3> {
 }
 
 /// a trait for transforming the SO(3) element from one form to another
-pub trait One2OneMap {
+pub trait One2OneMapSO3 {
     fn to_grp(self) -> Grp3;
     fn to_alg(self) -> Alg3;
     fn to_vec(self) -> Vec3;
 }
 
-impl One2OneMap for SO3 {
+impl One2OneMapSO3 for SO3 {
     /// transforming the SO(3) element to the form of algebra
     fn to_alg(self) -> Alg3 {
         match self {
@@ -193,7 +193,7 @@ impl SO3 {
 pub mod sosekf {
     use crate::time::{Duration, Epoch};
 
-    use super::{hat, jac_r, Alg3, Grp3, One2OneMap, Vec3, SO3};
+    use super::{hat, jac_r, Alg3, Grp3, One2OneMapSO3, Vec3, SO3};
     use crate::alloc::{boxed::Box, vec::Vec};
     use crate::errors::YakfError;
 
@@ -296,23 +296,6 @@ pub mod sosekf {
                 }
                 None => Err(YakfError::InverseErr),
             }
-            // let k = p_predict*h.transpose()*
-            // let g_x = self.transition_f(&x_predict, dt);
-            // let p_predict = &g_x * &self.prev_p * g_x.transpose() + &self.process_q;
-
-            // let h_x = self.transition_h(&x_predict);
-            // match (&h_x * &p_predict * &h_x.transpose() + &self.process_r).try_inverse() {
-            //     Some(inv) => {
-            //         let k = &p_predict * h_x.transpose() * inv;
-            //         let new_estimate = x_predict + &k * (measure - z_predict);
-            //         self.prev_x.set_state(new_estimate);
-            //         self.prev_x.set_epoch(m_epoch);
-            //         let sub = dmatrix_identity(self.n, self.n) - &k * h_x;
-            //         self.prev_p = &sub * &p_predict * &sub.transpose() + &self.process_r;
-            //         Ok(())
-            //     }
-            //     None => Err(YakfError::InverseErr),
-            // }
         }
     }
 }

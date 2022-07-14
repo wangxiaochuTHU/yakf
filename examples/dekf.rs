@@ -102,7 +102,7 @@ fn main() {
         y
     };
     let s = DVector::<f64>::from_row_slice(&[-5.0, 1.0]);
-    let t = Epoch::now().unwrap();
+    let t = Epoch::from_gpst_nanoseconds(0);
     let mut bike_actual = BikeState::new(s, t);
 
     println!(

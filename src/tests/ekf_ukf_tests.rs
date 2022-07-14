@@ -41,7 +41,7 @@ mod tests {
         }
 
         let s = OVector::<f64, U2>::new(-5.0, 1.0);
-        let t = Epoch::now().unwrap();
+        let t = Epoch::from_gpst_nanoseconds(0);
         let mut bike = BikeState::new(s, t);
         let dynamics = |x: &OVector<f64, U2>, _ext: &OVector<f64, Const<1>>, dt: Duration| {
             OVector::<f64, U2>::new(x[0] + x[1] * dt.in_seconds(), x[1])
@@ -199,7 +199,7 @@ mod tests {
         let mut rng = rand::thread_rng();
 
         let s = OVector::<f64, U2>::new(-5.0, 1.0);
-        let t = Epoch::now().unwrap();
+        let t = Epoch::from_gpst_nanoseconds(0);
         let mut bike_actual = BikeState::new(s, t);
         let dynamics = |x: &OVector<f64, U2>, _ext: &OVector<f64, Const<1>>, dt: Duration| {
             OVector::<f64, U2>::new(x[0] + x[1] * dt.in_seconds(), x[1])

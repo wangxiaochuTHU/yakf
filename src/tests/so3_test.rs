@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
 
-    use crate::lie::so3::{sosekf::SOEKF, Alg3, Grp3, One2OneMap, Vec3, SO3};
+    use crate::lie::so3::{sosekf::SOEKF, Alg3, Grp3, One2OneMapSO3, Vec3, SO3};
 
     use crate::linalg::{Const, OMatrix, OVector, U2, U3};
     /// import Re-exports of hifitime (for time) and nalgebra (for matrix)

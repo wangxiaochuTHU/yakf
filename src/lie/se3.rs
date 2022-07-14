@@ -254,13 +254,13 @@ pub fn jac_r(ρ: Vec3, θ_vec: Vec3) -> OMatrix<f64, U6, U6> {
 }
 
 /// a trait for transforming the SE(3) element from one form to another
-pub trait One2OneMapSE {
+pub trait One2OneMapSE3 {
     fn to_grp(self) -> Grp6;
     fn to_alg(self) -> Alg6;
     fn to_vec(self) -> Vec6;
 }
 
-impl One2OneMapSE for SE3 {
+impl One2OneMapSE3 for SE3 {
     /// transforming the SE(3) element to the form of algebra
     fn to_alg(self) -> Alg6 {
         match self {

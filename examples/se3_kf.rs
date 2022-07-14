@@ -1,7 +1,7 @@
 use seekf::SEEKF;
 use yakf::lie::se3::combine;
-use yakf::lie::se3::{Alg6, Grp6, One2OneMapSE, Vec6, SE3};
-use yakf::lie::so3::{Alg3, Grp3, One2OneMap, Vec3, SO3};
+use yakf::lie::se3::{Alg6, Grp6, One2OneMapSE3, Vec6, SE3};
+use yakf::lie::so3::{Alg3, Grp3, One2OneMapSO3, Vec3, SO3};
 
 use yakf::linalg::{Const, OMatrix, OVector, U2, U3, U4, U6};
 /// import Re-exports of hifitime (for time) and nalgebra (for matrix)
@@ -96,7 +96,7 @@ pub mod seekf {
     use yakf::time::{Duration, Epoch};
 
     use yakf::errors::YakfError;
-    use yakf::lie::se3::{combine, decombine, hat, jac_r, Alg6, Grp6, One2OneMapSE, Vec6, SE3};
+    use yakf::lie::se3::{combine, decombine, hat, jac_r, Alg6, Grp6, One2OneMapSE3, Vec6, SE3};
     use yakf::lie::so3::{hat as hat3, Vec3};
 
     use yakf::linalg::allocator::Allocator;
