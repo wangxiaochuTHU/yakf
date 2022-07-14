@@ -1,4 +1,3 @@
-use alloc::vec::Vec;
 /// Generators of SO(2) is used as below:
 ///
 /// E =    |0  -1|
@@ -7,9 +6,7 @@ use alloc::vec::Vec;
 ///
 use nalgebra::ComplexField;
 
-use core::f64::consts::PI;
-
-use crate::linalg::{DefaultAllocator, DimName, OMatrix, OVector, SMatrix, U1, U2};
+use crate::linalg::{OMatrix, OVector, U2};
 use libm::atan2;
 
 pub const SMALL_FLOAT: f64 = 1e-7;
