@@ -1,5 +1,5 @@
 [package]
-categories = ["science", "science::robotics", "navigation"]
+categories = ["science", "science::robotics"]
 description = "Yet Another Kalman Filter Implementation, as well as, Lie Theory (Lie group, algebra, vector) on SO(2), SO(3), SE(2) and SE(3). [no_std] is supported by default."
 edition = "2021"
 exclude = [
